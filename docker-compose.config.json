@@ -10,8 +10,14 @@
     "ssl_cert": "",
     "ssl_key": "",
     "layout": [
+        {
+            "node": "3ac591449d00"
+        }
     ],
     "hb": [
+        {
+            "node": "3ac591449d00"
+        }
     ],
     "container_host_constraints": [
         {}
