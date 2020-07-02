@@ -10,11 +10,6 @@
 
 ![Pic](https://i.imgur.com/rzhS362.png)
 
-## Support us on [Patreon](https://www.patreon.com/picluster)
-## Video [Demo](https://youtu.be/6r29Vc6sbXI)
-## Community Chat
- [![Slack](http://i.imgur.com/PXLxay0.png)](https://join.slack.com/t/piclusterteam/shared_invite/MjI1NzU0NDE2MDM3LTE1MDI0Nzg2ODktYmNmZDk2NzZhMA)
-
 ## Features
 
 - Move containers to different hosts in the cluster
