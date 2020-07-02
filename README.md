@@ -10,11 +10,6 @@
 
 ![Pic](https://i.imgur.com/rzhS362.png)
 
-## Support us on [Patreon](https://www.patreon.com/picluster)
-## Video [Demo](https://youtu.be/6r29Vc6sbXI)
-## Community Chat
- [![Slack](http://i.imgur.com/PXLxay0.png)](https://join.slack.com/t/piclusterteam/shared_invite/MjI1NzU0NDE2MDM3LTE1MDI0Nzg2ODktYmNmZDk2NzZhMA)
-
 ## Features
 
 - Move containers to different hosts in the cluster
@@ -93,7 +88,6 @@ Finally, in your web browser go to <http://127.0.0.1:3003>
 ## Functions-as-a-Service (FAAS)
 [See Wiki](https://github.com/picluster/picluster/wiki/Functions-as-a-Service-(FaaS))
 <br>
-[Video Demo](https://www.youtube.com/watch?v=QsXRt_oTJSE)
 
 ## Configuring and using the command-line client "pictl"
 
@@ -113,7 +107,7 @@ Finally, in your web browser go to <http://127.0.0.1:3003>
 
 # Authors and Contributions
 
-* Project created by Phillip Tribble. [LinkedIn](https://www.linkedin.com/in/philliptribble) , [Twitter](https://twitter.com/rusher81572)
+* Project created by Phillip Tribble.
 
 * [TokinRing](https://github.com/TokinRing), core developer.
 
