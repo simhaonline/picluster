@@ -72,7 +72,6 @@ if (config.elasticsearch) {
           date: {
             type: 'date',
             index: 'true',
-            format: 'yyyy-MM-dd HH:mm:ssZ'
           },
           data: {
             type: 'keyword',
@@ -95,8 +94,7 @@ if (config.elasticsearch) {
         properties: {
           date: {
             type: 'date',
-            index: 'true',
-            format: 'yyyy-MM-dd HH:mm:ssZ'
+            index: 'true'
           },
           cpu: {
             type: 'double'
@@ -788,8 +786,7 @@ app.get('/addhost', (req, res) => {
 });
 
 function elasticsearch_monitoring(cpu, node, disk, memory, total_running_containers, network_rx, network_tx) {
-  const current_time = new Moment().format('YYYY-MM-DD HH:mm:ssZ');
-
+  const current_time = new Moment().format('YYYY/MM/DD HH:mm:ss');
   const options = {
     url: config.elasticsearch + '/picluster-monitoring/picluster-monitoring',
     method: 'POST',
@@ -816,7 +813,7 @@ function elasticsearch_monitoring(cpu, node, disk, memory, total_running_contain
 }
 
 function elasticsearch(data) {
-  const current_time = new Moment().format('YYYY-MM-DD HH:mm:ssZ');
+  const current_time = new Moment().format('YYYY/MM/DD HH:mm:ss');
 
   const elasticsearch_data = JSON.stringify({
     date: current_time,
