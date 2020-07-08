@@ -97,10 +97,11 @@ if (config.elasticsearch) {
             index: 'true'
           },
           cpu: {
-            type: 'double'
+            type: 'double',
+            index: 'true'
           },
           node: {
-            type: 'keyword',
+            type: 'text',
             index: 'true'
           },
           memory: {
