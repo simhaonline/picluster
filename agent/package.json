@@ -1,30 +1,30 @@
 {
-  "name": "picluster-agent",
-  "version": "0.0.1",
-  "config": {
-    "unsafe-perm": true
-  },
-  "dependencies": {
-    "async": "latest",
-    "body-parser": "latest",
-    "child-process-promise": "",
-    "cpu-stats": "latest",
-    "diskspace": "latest",
-    "express": "latest",
-    "fd-diskspace": "latest",
-    "fs": "latest",
-    "line-reader": "",
-    "lodash": "latest",
-    "mem-stat": "latest",
-    "multer": "latest",
-    "graceful-fs": "latest",
-    "node-gyp": "",
-    "os": "",
-    "picluster-getos": "git+https://github.com/picluster/getos.git",
-    "request": "",
-    "request-debug": "",
-    "sys": "",
-    "systeminformation": "latest",
-    "unzip-stream": ""
-  }
+    "name": "picluster-agent",
+    "version": "0.0.1",
+    "config": {
+        "unsafe-perm": true
+    },
+    "dependencies": {
+        "async": "latest",
+        "body-parser": "latest",
+        "child-process-promise": "",
+        "cpu-stats": "latest",
+        "diskspace": "latest",
+        "express": "latest",
+        "fd-diskspace": "latest",
+        "fs": "latest",
+        "line-reader": "latest",
+        "lodash": "latest",
+        "mem-stat": "latest",
+        "multer": "latest",
+        "graceful-fs": "latest",
+        "node-gyp": "latest",
+        "os": "latest",
+        "picluster-getos": "git+https://github.com/picluster/getos.git",
+        "request": "latest",
+        "request-debug": "latest",
+        "sys": "latest",
+        "systeminformation": "latest",
+        "unzip-stream": "latest"
+    }
 }
