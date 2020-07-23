@@ -12,7 +12,7 @@ let config = JSON.parse(fs.readFileSync((process.env.PICLUSTER_CONFIG ? process.
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = config.ssl_self_signed ? '0' : '1';
 
 const app = express();
-app.use(bodyParser());
+app.use(bodyParser.json());
 app.use('/assets', express.static(path.join(__dirname, 'assets'), {
   maxage: '48h'
 }));

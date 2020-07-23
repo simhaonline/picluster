@@ -39,7 +39,7 @@
         "xo": "^0.23.0"
     },
     "dependencies": {
-        "eslint": "^5.6.0",
-        "yargs-parser": "^13.1.2"
+        "eslint": "latest",
+        "yargs-parser": "latest"
     }
 }

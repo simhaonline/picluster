@@ -33,7 +33,7 @@ if (config.ssl_self_signed) {
 
 const app = express();
 
-app.use(bodyParser());
+app.use(bodyParser.json());
 
 const upload = multer({
   dest: '../'

@@ -1,16 +1,17 @@
-# Version 2.8
+# Version 2.9
 
 ## New Features:
 * None
 
 ## Enhancements:
-* Updated Kibana dashboards and visualizations for Kibana 7.x 
+* None
 
 ## Removed or Deprecated:
 * None
 
 ## Bug Fixes:
 * Fixed Security Vulnerabilities with NPM packages
-* Fixed Docker-compose files to support Python3
-* Support for Elasticsearch 7.x
+* Fixed Date field for Elasticsearch
+* API changes for System metrics in Agent.js.
+* Updated deprecated Node.js libraries 
 
