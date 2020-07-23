@@ -14,7 +14,7 @@
     "fd-diskspace": "^1.0.0",
     "fs": "0.0.2",
     "line-reader": "",
-    "lodash": "^4.17.12",
+    "lodash": "^4.17.19",
     "mem-stat": "^1.0.5",
     "multer": "^1.4.0",
     "natives": "^1.1.5",
@@ -24,7 +24,7 @@
     "request": "",
     "request-debug": "",
     "sys": "",
-    "systeminformation": "^3.45.6",
+    "systeminformation": "^4.26.10",
     "unzip-stream": ""
   }
 }

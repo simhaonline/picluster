@@ -64,13 +64,17 @@ let memory_total = 0;
 let memory_used = 0;
 let memory_percentage = 0;
 let images = '';
+let network_device = '';
+
+sysinfo.networkInterfaces(data => {
+network_device = data[1].iface;
+});
 
 function monitoring() {
-  sysinfo.networkStats(data => {
-    network_tx = Math.round(data.tx_sec / 1000);
-    network_rx = Math.round(data.rx_sec / 1000);
-  });
-
+sysinfo.networkStats(network_device, data => {
+    network_tx = Math.round(data[0].tx_sec / 1000 );
+    network_rx = Math.round(data[0].rx_sec / 1000 );
+});
   sysinfo.mem(data => {
     memory_total = data.total;
     memory_buffers = data.buffcache;
