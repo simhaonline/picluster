@@ -14,4 +14,5 @@
 * Fixed Date field for Elasticsearch
 * API changes for System metrics in Agent.js.
 * Updated deprecated Node.js libraries 
+* Fixed Pictl create
 

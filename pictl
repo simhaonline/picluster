@@ -102,8 +102,8 @@ if type jq &>/dev/null; then
   create() {
     clear
     echo "Running the container(s)....."
-    if [ "${config_ssl}" == "true" ]; then curl -s -G -d "token=${config_token}&container=$1" "https://${config_web_connect}:${config_server_port}/create"
-    else curl -s -G -d "token=${config_token}&container=$1" "http://${config_web_connect}:${config_server_port}/create"
+    if [ "${config_ssl}" == "true" ]; then curl -s -G -d "token=${config_token}&container=$1&operation=create" "https://${config_web_connect}:${config_server_port}/manage"
+    else curl -s -G -d "token=${config_token}&container=$1&operation=create" "http://${config_web_connect}:${config_server_port}/manage"
     fi
   }
 
