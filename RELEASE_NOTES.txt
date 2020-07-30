@@ -4,7 +4,7 @@
 * None
 
 ## Enhancements:
-* Fixed CSS in the Command Output Window to be compatible with FIrefox 
+* Fixed CSS in the Command Output Window to be compatible with Firefox 
 
 ## Removed or Deprecated:
 * None
