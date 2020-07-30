@@ -4,7 +4,7 @@
 * None
 
 ## Enhancements:
-* None
+* Fixed CSS in the Command Output Window to be compatible with FIrefox 
 
 ## Removed or Deprecated:
 * None
@@ -15,4 +15,5 @@
 * API changes for System metrics in Agent.js.
 * Updated deprecated Node.js libraries 
 * Fixed Pictl create
+* Fixed Elasticsearch Running Container visualization
 
