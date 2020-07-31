@@ -59,22 +59,20 @@ if (fs.existsSync(path.normalize(doc_dir))) {
 
 function getData() {
     setTimeout(() => {
-        const options = {
-            url: `${scheme}${server}:${server_port}/nodes?token=${token}`,
-            rejectUnauthorized: ssl_self_signed
-        };
-
-        request(options, (error, response) => {
-            if (!error && response.statusCode === 200) {
-                try {
-                    nodedata = JSON.parse(response.body);
-                } catch (error2) {
-                    console.error(error2);
+        superagent
+            .get(`${scheme}${server}:${server_port}/nodes`)
+            .query({ token: token })
+            .end((error, response) => {
+                if (!error || !response.text) {
+                    try {
+                        nodedata = JSON.parse(response.text);
+                    } catch (error2) {
+                        console.error(error2);
+                    }
+                } else {
+                    console.log('\nError connecting with server. ' + error);
                 }
-            } else {
-                console.log('\nError connecting with server. ' + error);
-            }
-        });
+            });
         getData();
     }, 5000);
 }
