@@ -7,6 +7,7 @@ const express = require('express');
 const request = require('request');
 const bodyParser = require('body-parser');
 const superagent = require('superagent');
+const { response } = require('express');
 
 let config = JSON.parse(fs.readFileSync((process.env.PICLUSTER_CONFIG ? process.env.PICLUSTER_CONFIG : '../config.json'), 'utf8'));
 
@@ -401,20 +402,18 @@ app.post('/listcommands', (req, res) => {
 });
 
 function display_log(callback) {
-    const options = {
-        url: `${scheme}${server}:${server_port}/log?token=${token}`,
-        rejectUnauthorized: ssl_self_signed
-    };
-
     clear_log(() => {
         setTimeout(() => {
-            request(options, (error, response, body) => {
-                if (!error && response.statusCode === 200) {
-                    callback(body);
-                } else {
-                    callback('\nError connecting with server.');
-                }
-            });
+            superagent
+                .get(`${scheme}${server}:${server_port}/log`)
+                .query({ token: check_token })
+                .end((error, response) => {
+                    if (!error || !response.text) {
+                        callback('\nError connecting with server.');
+                    } else {
+                        callback(response.text);
+                    }
+                });
         }, request_timeout);
     });
 }
