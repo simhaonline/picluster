@@ -16,6 +16,7 @@
         "node-gyp": "",
         "request": "",
         "request-debug": "",
+        "superagent": "^5.3.1",
         "sys": ""
     }
 }
