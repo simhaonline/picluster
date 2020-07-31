@@ -1,22 +1,21 @@
 {
-  "name": "picluster-server",
-  "version": "0.0.1",
-  "config": {
-    "unsafe-perm": true
-  },
-  "dependencies": {
-    "async": "latest",
-    "body-parser": "latest",
-    "eslint": "latest",
-    "express": "",
-    "fs": "",
-    "line-reader": "",
-    "lodash": "latest",
-    "moment": "",
-    "multer": "latest",
-    "node-gyp": "",
-    "request": "",
-    "request-debug": "latest",
-    "sys": ""
-  }
+    "name": "picluster-server",
+    "version": "0.0.1",
+    "config": {
+        "unsafe-perm": true
+    },
+    "dependencies": {
+        "async": "latest",
+        "body-parser": "latest",
+        "eslint": "latest",
+        "express": "",
+        "fs": "",
+        "line-reader": "",
+        "lodash": "latest",
+        "moment": "",
+        "multer": "latest",
+        "node-gyp": "",
+        "superagent": "",
+        "sys": ""
+    }
 }
