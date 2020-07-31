@@ -4,7 +4,6 @@ const fs = require('fs');
 const path = require('path');
 const multer = require('multer');
 const express = require('express');
-const request = require('request');
 const bodyParser = require('body-parser');
 const superagent = require('superagent');
 const { response } = require('express');
@@ -406,7 +405,7 @@ function display_log(callback) {
         setTimeout(() => {
             superagent
                 .get(`${scheme}${server}:${server_port}/log`)
-                .query({ token: check_token })
+                .query({ token: token })
                 .end((error, response) => {
                     if (!error || !response.text) {
                         callback('\nError connecting with server.');
@@ -419,18 +418,16 @@ function display_log(callback) {
 }
 
 function clear_log(callback) {
-    const options = {
-        url: `${scheme}${server}:${server_port}/clearlog?token=${token}`,
-        rejectUnauthorized: ssl_self_signed
-    };
-
-    request(options, (error, response) => {
-        if (!error && response.statusCode === 200) {
-            callback('');
-        } else {
-            console.log('\nError clearing log: ' + error);
-        }
-    });
+    superagent
+        .get(`${scheme}${server}:${server_port}/clearlog`)
+        .query({ token: token })
+        .end((error, response) => {
+            if (!error && !response.text) {
+                callback('');
+            } else {
+                console.log('\nError clearing log: ' + error);
+            }
+        });
 }
 
 app.post('/exec', (req, res) => {
@@ -442,34 +439,21 @@ app.post('/exec', (req, res) => {
     if ((check_token !== token) || (!check_token)) {
         res.end('\nError: Invalid Credentials');
     } else {
-        const command = JSON.stringify({
-            command: req.body.command,
-            token,
-            node
-        });
-
-        const options = {
-            url: `${scheme}${server}:${server_port}/exec`,
-            rejectUnauthorized: ssl_self_signed,
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Content-Length': command.length
-            },
-            body: command
-        };
-
-        request(options, (error, response) => {
-            try {
-                if (error) {
-                    res.end(error);
-                } else {
-                    res.end(response.body);
+        superagent
+            .post(`${scheme}${server}:${server_port}/exec`)
+            .send({ token: check_token, command: req.body.command, node: node })
+            .set('accept', 'json')
+            .end((error, response) => {
+                try {
+                    if (error) {
+                        res.end(error);
+                    } else {
+                        res.end(response.text);
+                    }
+                } catch (error2) {
+                    res.end('\nAn error has occurred while retrieving the command.');
                 }
-            } catch (error2) {
-                res.end('\nAn error has occurred while retrieving the command.');
-            }
-        });
+            });
     }
 });
 
