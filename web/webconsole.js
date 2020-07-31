@@ -386,24 +386,17 @@ app.post('/listcommands', (req, res) => {
             token
         });
 
-        const options = {
-            url: `${scheme}${server}:${server_port}/listcommands`,
-            rejectUnauthorized: ssl_self_signed,
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Content-Length': token_body.length
-            },
-            body: token_body
-        };
-
-        request(options, (error, response, body) => {
-            if (error) {
-                res.end(error);
-            } else {
-                res.end(body);
-            }
-        });
+        superagent
+            .post(`${scheme}${server}:${server_port}/listcommands`)
+            .send({ token: check_token })
+            .set('accept', 'json')
+            .end((error, response) => {
+                if (error) {
+                    res.end(error);
+                } else {
+                    res.end(response.text);
+                }
+            });
     }
 });
 
