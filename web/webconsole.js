@@ -505,18 +505,16 @@ app.get('/rsyslog', (req, res) => {
     if ((check_token !== token) || (!check_token)) {
         res.end('\nError: Invalid Credentials');
     } else {
-        const options = {
-            url: `${scheme}${server}:${server_port}/rsyslog?token=${token}`,
-            rejectUnauthorized: ssl_self_signed
-        };
-
-        request(options, (error, response, body) => {
-            if (!error && response.statusCode === 200) {
-                res.end(body);
-            } else {
-                res.end('\nError connecting with server.');
-            }
-        });
+        superagent
+            .get(`${scheme}${server}:${server_port}/rsyslog`)
+            .query({ token: check_token })
+            .end((error, response) => {
+                if (!error || !response.text) {
+                    res.end(response.text);
+                } else {
+                    res.end('\nError connecting with server.');
+                }
+            });
     }
 });
 
