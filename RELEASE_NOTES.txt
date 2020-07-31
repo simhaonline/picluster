@@ -10,4 +10,4 @@
 * None
 
 ## Bug Fixes:
-* 
+* Fixed output message when removing host from cluster
