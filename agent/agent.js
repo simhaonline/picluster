@@ -434,8 +434,6 @@ function additional_services() {
         superagent
             .get(`${scheme}${server}:${server_port}/start`)
             .query({ token: token, container: '*' })
-            .use(prefix)
-            .use(nocache)
             .end((err, res) => {
                 if (err) {
                     console.log(error);
