@@ -145,31 +145,18 @@ app.post('/sendconfig', (req, res) => {
     if ((check_token !== token) || (!check_token)) {
         res.end('\nError: Invalid Credentials');
     } else {
-        const command = JSON.stringify({
-            payload,
-            token
-        });
-
-        const options = {
-            url: `${scheme}${server}:${server_port}/updateconfig`,
-            rejectUnauthorized: ssl_self_signed,
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Content-Length': command.length
-            },
-            body: command,
-            token
-        };
-
-        request(options, (error, response, body) => {
-            if (error) {
-                res.end(error);
-            } else {
-                updateConfig(payload);
-                res.end(body);
-            }
-        });
+        superagent
+            .post(`${scheme}${server}:${server_port}/updateconfig`)
+            .send({ token: check_token, payload })
+            .set('accept', 'json')
+            .end((error, response) => {
+                if (error) {
+                    res.end(error);
+                } else {
+                    updateConfig(payload);
+                    res.end(response.text);
+                }
+            });
     }
 });
 
@@ -236,33 +223,19 @@ app.post('/elasticsearch', (req, res) => {
     if ((check_token !== token) || (!check_token)) {
         res.end('\nError: Invalid Credentials');
     } else {
-        const command = JSON.stringify({
-            command: req.body.command,
-            token,
-            elasticsearch_url,
-            mode
-        });
-
-        const options = {
-            url: `${scheme}${server}:${server_port}/elasticsearch`,
-            rejectUnauthorized: ssl_self_signed,
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Content-Length': command.length
-            },
-            body: command
-        };
-
-        request(options, error => {
-            if (error) {
-                res.end(error);
-            } else {
-                display_log(data => {
-                    res.end(data);
-                });
-            }
-        });
+        superagent
+            .post(`${scheme}${server}:${server_port}/elasticsearch`)
+            .send({ token: check_token, elasticsearch_url: elasticsearch_url, mode: mode })
+            .set('accept', 'json')
+            .end((error, response) => {
+                if (error) {
+                    res.end(error);
+                } else {
+                    display_log(data => {
+                        res.end(response.text);
+                    });
+                }
+            });
     }
 });
 
@@ -992,22 +965,20 @@ app.post('/manage', (req, res) => {
     if ((check_token !== token) || (!check_token)) {
         res.end('\nError: Invalid Credentials');
     } else {
-        const options = {
-            url: `${scheme}${server}:${server_port}/manage?token=${token}&container=${container}&operation=${operation}`,
-            rejectUnauthorized: ssl_self_signed
-        };
-
-        request(options, (error, response) => {
-            try {
-                if (error) {
-                    res.end(error);
-                } else {
-                    res.end(response.body);
+        superagent
+            .get(`${scheme}${server}:${server_port}/manage`)
+            .query({ token: check_token, container: container, operation: operation })
+            .end((error, response) => {
+                try {
+                    if (error) {
+                        res.end(error);
+                    } else {
+                        res.end(response.text);
+                    }
+                } catch (error2) {
+                    res.end('\nAn error has occurred while trying to manage the container(s).');
                 }
-            } catch (error2) {
-                res.end('\nAn error has occurred while trying to manage the container(s).');
-            }
-        });
+            });
     }
 });
 
@@ -1031,22 +1002,20 @@ app.post('/manage-image', (req, res) => {
     if ((check_token !== token) || (!check_token)) {
         res.end('\nError: Invalid Credentials');
     } else {
-        const options = {
-            url: `${scheme}${server}:${server_port}/manage-image?token=${token}&container=${container}&operation=${operation}&no_cache=${no_cache}`,
-            rejectUnauthorized: ssl_self_signed
-        };
-
-        request(options, (error, response) => {
-            try {
-                if (error) {
-                    res.end(error);
-                } else {
-                    res.end(response.body);
+        superagent
+            .get(`${scheme}${server}:${server_port}/manage-image`)
+            .query({ token: check_token, container: container, operation: operation, no_cache: no_cache })
+            .end((error, response) => {
+                try {
+                    if (error) {
+                        res.end(error);
+                    } else {
+                        res.end(response.text);
+                    }
+                } catch (error2) {
+                    res.end('\nAn error has occurred while trying to manage the image(s).');
                 }
-            } catch (error2) {
-                res.end('\nAn error has occurred while trying to manage the container(s).');
-            }
-        });
+            });
     }
 });
 
@@ -1060,16 +1029,18 @@ app.get('/hb', (req, res) => {
             url: `${scheme}${server}:${server_port}/hb?token=${token}`,
             rejectUnauthorized: ssl_self_signed
         };
-
-        request(options, (error, response) => {
-            if (!error && response.statusCode === 200) {
-                display_log(data => {
-                    res.end(data);
-                });
-            } else {
-                res.end('\nError connecting with server.');
-            }
-        });
+        superagent
+            .get(`${scheme}${server}:${server_port}/hb`)
+            .query({ token: check_token })
+            .end((error, response) => {
+                if (!error || !response.text) {
+                    display_log(data => {
+                        res.end(response.text);
+                    });
+                } else {
+                    res.end('\nError connecting with server.');
+                }
+            });
     }
 });
 
@@ -1079,18 +1050,16 @@ app.get('/log', (req, res) => {
     if ((check_token !== token) || (!check_token)) {
         res.end('\nError: Invalid Credentials');
     } else {
-        const options = {
-            url: `${scheme}${server}:${server_port}/log?token=${token}`,
-            rejectUnauthorized: ssl_self_signed
-        };
-
-        request(options, (error, response, body) => {
-            if (!error && response.statusCode === 200) {
-                res.end(body);
-            } else {
-                res.end('\nError connecting with server.');
-            }
-        });
+        superagent
+            .get(`${scheme}${server}:${server_port}/log`)
+            .query({ token: check_token })
+            .end((error, response) => {
+                if (!error || !response.text) {
+                    res.end(response.text);
+                } else {
+                    res.end('\nError connecting with server.');
+                }
+            });
     }
 });
 
@@ -1114,14 +1083,16 @@ app.get('/getconfig', (req, res) => {
             url: `${scheme}${server}:${server_port}/getconfig?token=${token}`,
             rejectUnauthorized: ssl_self_signed
         };
-
-        request(options, (error, response, body) => {
-            if (!error && response.statusCode === 200) {
-                res.end(body);
-            } else {
-                res.end('Error connecting with server. ' + error);
-            }
-        });
+        superagent
+            .get(`${scheme}${server}:${server_port}/getconfig`)
+            .query({ token: check_token })
+            .end((error, response) => {
+                if (!error || !response.text) {
+                    res.end(response.text);
+                } else {
+                    res.end('Error connecting with server. ' + error);
+                }
+            });
     }
 });
 
