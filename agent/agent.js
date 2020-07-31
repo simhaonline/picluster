@@ -4,7 +4,6 @@ const fs = require('fs');
 const os = require('os');
 const unzip = require('unzip-stream');
 const express = require('express');
-const request = require('request');
 const diskspace = require('diskspace');
 const bodyParser = require('body-parser');
 const multer = require('multer');
@@ -12,6 +11,9 @@ const getos = require('picluster-getos');
 const async = require('async');
 const sysinfo = require('systeminformation');
 const { exec } = require('child_process');
+const superagent = require('superagent');
+const { forOwn } = require('lodash');
+const { send } = require('process');
 
 let config = process.env.PICLUSTER_CONFIG ? JSON.parse(fs.readFileSync(process.env.PICLUSTER_CONFIG, 'utf8')) : JSON.parse(fs.readFileSync('../config.json', 'utf8'));
 const app = express();
@@ -165,54 +167,56 @@ function monitoring() {
 
 function send_ping() {
     setTimeout(() => {
-        const token_body = JSON.stringify({
-            token
-        });
-
-        const options = {
-            url: `${scheme}${vip_slave}:${agent_port}/pong`,
-            rejectUnauthorized: ssl_self_signed,
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Content-Length': token_body.length
-            },
-            body: token_body
-        };
-
-        request(options, (error, response, body) => {
-            let found_vip = false;
-            if (error) {
-                const cmd = ip_add_command;
-                exec(cmd).then(noop).catch(noop);
-            } else {
-                const interfaces = require('os').networkInterfaces();
-                Object.keys(interfaces).forEach(devName => {
-                    const iface = interfaces[devName];
-                    iface.forEach(alias => {
-                        if (alias.address === vip) {
-                            found_vip = true;
-                        }
-                    });
-                });
-                const json_object = JSON.parse(body);
-
-                if (json_object.vip_detected === 'false' && found_vip === false) {
-                    console.log('\nVIP not detected on either machine. Bringing up the VIP on this host.');
+        superagent
+            .post(`${scheme}${vip_slave}:${agent_port}/pong`)
+            .send({
+                token: token
+            })
+            .set('accept', 'json')
+            .end((err, res) => {
+                let found_vip = false;
+                if (error) {
                     const cmd = ip_add_command;
-                    exec(cmd).catch(error2 => {
-                        console.log(error2);
+                    exec(cmd, (error, stdout, stderr) => {}, err => {
+                        if (err) {
+                            console.error('error:', err);
+                        }
+                        // Console.log('output', output);
                     });
-                }
-                if ((json_object.vip_detected === 'true' && found_vip === true)) {
-                    console.log('\nVIP detected on boths hosts! Stopping the VIP on this host.');
-                    const cmd = ip_delete_command;
-                    exec(cmd).catch(error2 => {
-                        console.log(error2);
+                } else {
+                    const interfaces = require('os').networkInterfaces();
+                    Object.keys(interfaces).forEach(devName => {
+                        const iface = interfaces[devName];
+                        iface.forEach(alias => {
+                            if (alias.address === vip) {
+                                found_vip = true;
+                            }
+                        });
                     });
+                    const json_object = JSON.parse(res.text);
+
+                    if (json_object.vip_detected === 'false' && found_vip === false) {
+                        console.log('\nVIP not detected on either machine. Bringing up the VIP on this host.');
+                        const cmd = ip_add_command;
+                        exec(cmd, (error, stdout, stderr) => {}, err => {
+                            if (err) {
+                                console.error('error:', err);
+                            }
+                            // Console.log('output', output);
+                        });
+                    }
+                    if ((json_object.vip_detected === 'true' && found_vip === true)) {
+                        console.log('\nVIP detected on boths hosts! Stopping the VIP on this host.');
+                        const cmd = ip_delete_command;
+                        exec(cmd, (error, stdout, stderr) => {}, err => {
+                            if (err) {
+                                console.error('error:', err);
+                            }
+                            // Console.log('output', output);
+                        });
+                    }
                 }
-            }
-        });
+            });
         send_ping();
     }, vip_ping_time);
 }
@@ -384,46 +388,35 @@ if (config.ssl && config.ssl_cert && config.ssl_key) {
 function bootstrapNode() {
     setTimeout(() => {
         console.log('Attempting to bootstrap node to server......');
-        const bootstrap_body = JSON.stringify({
-            token,
-            host: node
-        });
-
-        const options = {
-            url: `${scheme}${server}:${server_port}/bootstrap`,
-            rejectUnauthorized: ssl_self_signed,
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Content-Length': bootstrap_body.length
-            },
-            body: bootstrap_body
-        };
 
         try {
-            request(options, (error, response, body) => {
-                if (error) {
-                    console.log('Bootstrap failed due to an error or another bootstrap operation already in progress.\n');
-                    console.log(error);
-                    bootstrapNode();
-                } else {
-                    try {
-                        const status = JSON.parse(body);
-                        if (status.output > 0) {
-                            console.log('Bootstrap successful.');
-                            additional_services();
-                        } else {
-                            console.log('\nAnother bootstrap is in progress. Will try again soon.....');
+            superagent
+                .post(`${scheme}${server}:${server_port}/bootstrap`)
+                .send({ token: token, host: node })
+                .set('accept', 'json')
+                .end((err, res) => {
+                    if (err) {
+                        console.log('Bootstrap failed due to an error or another bootstrap operation already in progress.\n');
+                        console.log(error);
+                        bootstrapNode();
+                    } else {
+                        try {
+                            const status = JSON.parse(res.text);
+                            if (status.output > 0) {
+                                console.log('Bootstrap successful.');
+                                additional_services();
+                            } else {
+                                console.log('\nAnother bootstrap is in progress. Will try again soon.....');
+                                bootstrapNode();
+                            }
+                        } catch (error2) {
+                            console.log('\n' + error2 + '\n' + JSON.stringify(res.text));
                             bootstrapNode();
                         }
-                    } catch (error2) {
-                        console.log('\n' + error2 + '\n' + JSON.stringify(body));
-                        bootstrapNode();
                     }
-                }
-            });
+                });
         } catch (error) {
-            console.log('\nAn error has occurred with bootstrapping. Trying again.......');
+            console.log('\nAn error has occurred with bootstrapping. Trying again.......' + '\n' + error);
             bootstrapNode();
         }
     }, 3000);
@@ -436,15 +429,22 @@ function additional_services() {
 
     if (config.autostart_containers) {
         console.log('Starting all the containers.....');
-
-        const options = {
-            url: `${scheme}${server}:${server_port}/start?token=${token}&container=*`,
-            rejectUnauthorized: ssl_self_signed
-        };
-
-        request.get(options).on('error', e => {
-            console.error(e);
-        });
+        /** 
+                const options = {
+                    url: `${scheme}${server}:${server_port}/start?token=${token}&container=*`,
+                    rejectUnauthorized: ssl_self_signed
+                };
+        **/
+        superagent
+            .get(`${scheme}${server}:${server_port}/start`)
+            .query({ token: token, container: '*' })
+            .use(prefix)
+            .use(nocache)
+            .end((err, res) => {
+                if (err) {
+                    console.log(error);
+                }
+            });
     }
 
     if (config.vip_ip && config.vip) {
@@ -469,7 +469,14 @@ function additional_services() {
                         ip_add_command = 'ip addr add ' + config.vip_ip + '/32 dev ' + vip_eth_device;
                         ip_delete_command = 'ip addr del ' + config.vip_ip + '/32 dev ' + vip_eth_device;
                         vip_ping_time = config.vip[i].vip_ping_time;
-                        exec(ip_delete_command).then(send_ping).catch(send_ping);
+                        exec(ip_delete_command, (error, stdout, stderr) => {
+                            send_ping();
+                        }, err => {
+                            if (err) {
+                                console.error('error:', err);
+                            }
+                            // Console.log('output', output);
+                        });
                     });
                 });
             });
