@@ -12,5 +12,7 @@
 ## Bug Fixes:
 * Fixed output message when removing host from cluster
 * Fixed Prune Window size [ToDo]
+* Fixed Prune Heartbeat size [ToDo]
+* Fixed Fonts [ToDo]
 * Fixed Docker image tags for pulling images from the registry
 * Fixed Docker autocomplete for pulling images from the registry
