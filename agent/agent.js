@@ -171,7 +171,7 @@ function send_ping() {
             .set('accept', 'json')
             .end((err, res) => {
                 let found_vip = false;
-                if (error) {
+                if (err) {
                     const cmd = ip_add_command;
                     exec(cmd, (error, stdout, stderr) => {}, err => {
                         if (err) {
