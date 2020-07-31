@@ -485,32 +485,17 @@ app.get('/syslog', (req, res) => {
     if ((check_token !== token) || (!check_token)) {
         res.end('\nError: Invalid Credentials');
     } else {
-        const command = JSON.stringify({
-            token
-        });
-
-        const options = {
-            url: `${scheme}${server}:${server_port}/syslog`,
-            rejectUnauthorized: ssl_self_signed,
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Content-Length': command.length
-            },
-            body: command
-        };
-
-        request(options, (error, response) => {
-            try {
-                if (error) {
-                    res.end(error);
+        superagent
+            .post(`${scheme}${server}:${server_port}/syslog`)
+            .send({ token: check_token })
+            .set('accept', 'json')
+            .end((error, response) => {
+                if (!error || !response.text) {
+                    res.end(response.text);
                 } else {
-                    res.end(response.body);
+                    res.end('\nAn error has occurred while retrieving the Syslog.');
                 }
-            } catch (error2) {
-                res.end('\nAn error has occurred while retrieving the Syslog.');
-            }
-        });
+            });
     }
 });
 
@@ -541,30 +526,21 @@ app.get('/prune', (req, res) => {
     if ((check_token !== token) || (!check_token)) {
         res.end('\nError: Invalid Credentials');
     } else {
-        const command = JSON.stringify({
-            token
-        });
-        const options = {
-            url: `${scheme}${server}:${server_port}/prune`,
-            rejectUnauthorized: ssl_self_signed,
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Content-Length': command.length
-            },
-            body: command
-        };
-        request(options, (error, response) => {
-            try {
-                if (error) {
-                    res.end(error);
-                } else {
-                    res.end(response.body);
+        superagent
+            .post(`${scheme}${server}:${server_port}/prune`)
+            .send({ token: token })
+            .set('accept', 'json')
+            .end((error, response) => {
+                try {
+                    if (error) {
+                        res.end(error);
+                    } else {
+                        res.end(response.text);
+                    }
+                } catch (error2) {
+                    res.end('\nAn error has occurred while cleaning Docker.');
                 }
-            } catch (error2) {
-                res.end('\nAn error has occurred while cleaning Docker.');
-            }
-        });
+            });
     }
 });
 
@@ -667,20 +643,18 @@ app.post('/update-container', (req, res) => {
     if ((check_token !== token) || (!check_token)) {
         res.end('\nError: Invalid Credentials');
     } else if (container) {
-        const options = {
-            url: `${scheme}${server}:${server_port}/update-container?token=${token}&container=${container}&container_args=${container_args}&heartbeat_args=${heartbeat_args}&failover_constraints=${failover_constraints}`,
-            rejectUnauthorized: ssl_self_signed
-        };
-
-        request(options, (error, response) => {
-            if (!error && response.statusCode === 200) {
-                display_log(data => {
-                    res.end(data);
-                });
-            } else {
-                res.end('\nError connecting with server.');
-            }
-        });
+        superagent
+            .get(`${scheme}${server}:${server_port}/update-container`)
+            .query({ token: check_token, container: container, container_args: container_args, heartbeat_args: heartbeat_args, failover_constraints: failover_constraints })
+            .end((error, response) => {
+                if (!error || !response.text) {
+                    display_log(data => {
+                        res.end(response.text);
+                    });
+                } else {
+                    res.end('\nError connecting with server.');
+                }
+            });
     } else {
         res.end('\nError missing some parameters.');
     }
@@ -713,20 +687,18 @@ app.post('/addcontainer', (req, res) => {
     if ((check_token !== token) || (!check_token)) {
         res.end('\nError: Invalid Credentials');
     } else if ((container) && (container_args) && (host)) {
-        const options = {
-            url: `${scheme}${server}:${server_port}/addcontainer?token=${token}&container=${container}&host=${host}&container_args=${container_args}&heartbeat_args=${heartbeat_args}&failover_constraints=${failover_constraints}`,
-            rejectUnauthorized: ssl_self_signed
-        };
-
-        request(options, (error, response) => {
-            if (!error && response.statusCode === 200) {
-                display_log(data => {
-                    res.end(data);
-                });
-            } else {
-                res.end('\nError connecting with server.');
-            }
-        });
+        superagent
+            .get(`${scheme}${server}:${server_port}/addcontainer`)
+            .query({ token: check_token, container: container, host: host, container_args: container_args, heartbeat_args: heartbeat_args, failover_constraints: failover_constraints })
+            .end((error, response) => {
+                if (!error || !response.text) {
+                    display_log(data => {
+                        res.end(response.text);
+                    });
+                } else {
+                    res.end('\nError connecting with server.' + error);
+                }
+            });
     } else {
         res.end('\nError missing some parameters.');
     }
@@ -739,25 +711,25 @@ function sendFile(file, temp_file) {
         file: fs.createReadStream(file)
     };
 
-    const options = {
-        url: `${scheme}${server}:${server_port}/receive-file`,
-        rejectUnauthorized: ssl_self_signed,
-        formData
-    };
+    superagent
+        .post(`${scheme}${server}:${server_port}/receive-file`)
+        .send({ token, name, file, formData })
+        .set('accept', 'json')
+        .end((error, response) => {
+            if (error) {
+                console.error('upload failed:', error);
+            } else {
+                fs.unlink(temp_file, error => {
+                    if (error) {
+                        console.log(error);
+                    } else {
+                        console.log('Upload successful!');
+                    }
+                });
+            };
+        });
 
-    request.post(options, err => {
-        if (err) {
-            console.error('upload failed:', err);
-        } else {
-            fs.unlink(temp_file, error => {
-                if (error) {
-                    console.log(error);
-                }
-            });
-            console.log('Upload successful!');
-        }
-    });
-}
+};
 
 app.post('/upload', upload.single('file'), (req, res) => {
     const check_token = req.body.token;

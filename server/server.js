@@ -1458,18 +1458,17 @@ function copyToAgents(file, config_file, temp_file) {
 
 app.post('/receive-file', upload.single('file'), (req, res) => {
     const check_token = req.body.token;
-
     if ((check_token !== token) || (!check_token)) {
         res.end('\nError: Invalid Credentials');
     } else {
-        fs.readFile(req.file.path, (err, data) => {
+        fs.readFile(req.body.formData.file.path, (err, data) => {
             if (data) {
-                const newPath = '../' + req.file.originalname;
+                const newPath = '../' + req.body.formData.file.path;
                 fs.writeFile(newPath, data, err => {
                     if (err) {
                         console.log(err);
                     } else {
-                        copyToAgents(newPath, '', req.file.path);
+                        copyToAgents(newPath, '', req.body.formData.file.path);
                     }
                 });
             }
