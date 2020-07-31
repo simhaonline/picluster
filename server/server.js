@@ -33,7 +33,7 @@ if (config.ssl_self_signed) {
 
 const app = express();
 
-app.use(bodyParser());
+app.use(bodyParser.json());
 
 const upload = multer({
   dest: '../'
@@ -787,7 +787,7 @@ app.get('/addhost', (req, res) => {
 });
 
 function elasticsearch_monitoring(cpu, node, disk, memory, total_running_containers, network_rx, network_tx) {
-  const current_time = new Moment().format('YYYY/MM/DD HH:mm:ss');
+  const current_time = new Moment();
   const options = {
     url: config.elasticsearch + '/picluster-monitoring/picluster-monitoring',
     method: 'POST',
@@ -814,7 +814,7 @@ function elasticsearch_monitoring(cpu, node, disk, memory, total_running_contain
 }
 
 function elasticsearch(data) {
-  const current_time = new Moment().format('YYYY/MM/DD HH:mm:ss');
+  const current_time = new Moment();
 
   const elasticsearch_data = JSON.stringify({
     date: current_time,
