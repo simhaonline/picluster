@@ -291,7 +291,7 @@ app.get('/remoteimagetags', (req, res) => {
     let endpoint;
     switch (registry) {
         case 'hub.docker.com':
-            endpoint = 'https://hub.docker.com/v2/repositories/' + ((image.indexOf('/') === -1) ? ('library/' + image) : image) + '/tags/?page=' + page + '&page_size=500';
+            endpoint = 'https://hub.docker.com/v2/repositories/' + ((image.indexOf('/') === -1) ? ('library/' + image) : image) + '/tags/?page=1' + '&page_size=500';
             break;
         default:
             // Custom registries
@@ -306,15 +306,18 @@ app.get('/remoteimagetags', (req, res) => {
         } : {}
     };
 
-    request(options, (error, response, body) => {
-        if (!error && response.statusCode !== 200) {
-            error = body;
-        }
+    superagent
+        .get(options.url)
+        .set(options.headers)
+        .end((error, response) => {
+            if (error || !response.text) {
+                error = error;
+            }
 
-        res.status(response.statusCode).end((error) ? JSON.stringify({
-            error: error.toString()
-        }) : body);
-    });
+            res.status(response.statusCode).end((error) ? JSON.stringify({
+                error: error.toString()
+            }) : response.text);
+        });
 });
 
 app.get('/remoteimages', (req, res) => {
@@ -324,9 +327,6 @@ app.get('/remoteimages', (req, res) => {
     const {
         image
     } = req.query;
-    const {
-        page
-    } = req.query || 1;
     const {
         username
     } = req.query || '';
@@ -346,7 +346,7 @@ app.get('/remoteimages', (req, res) => {
     let endpoint;
     switch (registry) {
         case 'hub.docker.com':
-            endpoint = 'https://hub.docker.com/v2/search/repositories/?page=' + page + '&query=' + image;
+            endpoint = 'https://hub.docker.com/v2/search/repositories/?page=1' + '&query=' + image;
             break;
         default:
             // Custom registries
@@ -361,15 +361,19 @@ app.get('/remoteimages', (req, res) => {
         } : {}
     };
 
-    request(options, (error, response, body) => {
-        if (!error && response.statusCode !== 200) {
-            error = body;
-        }
+    superagent
+        .get(options.url)
+        .query({ token: check_token })
+        .set(options.headers)
+        .end((error, response) => {
+            if (error || !response.text) {
+                error = body;
+            }
 
-        res.status(response.statusCode).end((error) ? JSON.stringify({
-            error: error.toString()
-        }) : body);
-    });
+            res.status(response.statusCode).end((error) ? JSON.stringify({
+                error: error.toString()
+            }) : response.text);
+        });
 });
 
 app.post('/listcommands', (req, res) => {
