@@ -759,20 +759,18 @@ app.post('/removecontainerconfig', (req, res) => {
     if ((check_token !== token) || (!check_token)) {
         res.end('\nError: Invalid Credentials');
     } else if (container) {
-        const options = {
-            url: `${scheme}${server}:${server_port}/removecontainerconfig?token=${token}&container=${container}`,
-            rejectUnauthorized: ssl_self_signed
-        };
-
-        request(options, (error, response) => {
-            if (!error && response.statusCode === 200) {
-                display_log(data => {
-                    res.end(data);
-                });
-            } else {
-                res.end('\nError connecting with server.');
-            }
-        });
+        superagent
+            .get(`${scheme}${server}:${server_port}/removecontainerconfig`)
+            .query({ token: check_token, container: container })
+            .end((error, response) => {
+                if (!error || !response.text) {
+                    display_log(data => {
+                        res.end(response.text);
+                    });
+                } else {
+                    res.end('\nError connecting with server.');
+                }
+            });
     } else {
         res.end('\nError container name.');
     }
