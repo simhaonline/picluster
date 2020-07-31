@@ -425,12 +425,7 @@ function additional_services() {
 
     if (config.autostart_containers) {
         console.log('Starting all the containers.....');
-        /** 
-                const options = {
-                    url: `${scheme}${server}:${server_port}/start?token=${token}&container=*`,
-                    rejectUnauthorized: ssl_self_signed
-                };
-        **/
+
         superagent
             .get(`${scheme}${server}:${server_port}/start`)
             .query({ token: token, container: '*' })
