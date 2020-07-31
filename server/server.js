@@ -1707,7 +1707,7 @@ app.post('/swarm-remove', (req, res) => {
 
         request(options, error => {
             if (error) {
-                res.end('An error occurred: ' + error);
+                console.log('An error occurred: ' + error);
             } else {
                 bootstrap.status = 1;
                 console.log('\nRemoved Swarm Token from config file.');
@@ -1721,7 +1721,7 @@ app.post('/swarm-remove', (req, res) => {
         res.end('\nError: Invalid Credentials');
     } else {
         swarm_remove();
-        res.end('');
+        res.end('\nRemoved Swarm Token from config file.');
     }
 });
 

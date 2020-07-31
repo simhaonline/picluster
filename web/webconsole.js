@@ -548,18 +548,16 @@ app.get('/clear-functions', (req, res) => {
     if ((check_token !== token) || (!check_token)) {
         res.end('\nError: Invalid Credentials');
     } else {
-        const options = {
-            url: `${scheme}${server}:${server_port}/clear-functions?token=${token}`,
-            rejectUnauthorized: ssl_self_signed
-        };
-
-        request(options, (error, response, body) => { // eslint-disable-line no-unused-vars
-            if (!error && response.statusCode === 200) {
-                res.end('Sent request to delete functions.');
-            } else {
-                res.end('\nError connecting with server.');
-            }
-        });
+        superagent
+            .get(`${scheme}${server}:${server_port}/clear-functions`)
+            .query({ token: check_token })
+            .end((error, response) => {
+                if (!error || !response.text) {
+                    res.end('Sent request to delete functions.');
+                } else {
+                    res.end('\nError connecting with server.');
+                }
+            });
     }
 });
 
@@ -574,18 +572,16 @@ app.get('/function', (req, res) => {
     if ((check_token !== token) || (!check_token)) {
         res.end('\nError: Invalid Credentials');
     } else {
-        const options = {
-            url: scheme + server + ':' + server_port + '/function?token=' + token + '&function=' + get_function + '&container_args=' + get_args,
-            rejectUnauthorized: ssl_self_signed
-        };
-
-        request(options, (error, response, body) => { // eslint-disable-line no-unused-vars
-            if (!error && response.statusCode === 200) {
-                res.end('');
-            } else {
-                console.log('\n' + error);
-            }
-        });
+        superagent
+            .get(`${scheme}${server}:${server_port}/function`)
+            .query({ token: check_token, function: get_function, container_args: get_args })
+            .end((error, response) => {
+                if (!error || !response.text) {
+                    res.end('');
+                } else {
+                    console.log('\n' + error);
+                }
+            });
     }
 });
 
@@ -606,20 +602,18 @@ app.post('/changehost', (req, res) => {
     if ((check_token !== token) || (!check_token)) {
         res.end('\nError: Invalid Credentials');
     } else {
-        const options = {
-            url: `${scheme}${server}:${server_port}/changehost?token=${token}&container=${container}&newhost=${newhost}`,
-            rejectUnauthorized: ssl_self_signed
-        };
-
-        request(options, (error, response) => {
-            if (!error && response.statusCode === 200) {
-                display_log(data => {
-                    res.end(data);
-                });
-            } else {
-                res.end('\nError connecting with server.');
-            }
-        });
+        superagent
+            .get(`${scheme}${server}:${server_port}/changehost`)
+            .query({ token: check_token, container: container, newhost: newhost })
+            .end((error, response) => {
+                if (!error || !response.text) {
+                    display_log(data => {
+                        res.end(response.text);
+                    });
+                } else {
+                    res.end('\nError connecting with server.');
+                }
+            });
     }
 });
 
@@ -783,31 +777,19 @@ app.post('/swarm-remove', (req, res) => {
     if ((check_token !== token) || (!check_token)) {
         res.end('\nError: Invalid Credentials');
     } else if (host) {
-        const payload = JSON.stringify({
-            host,
-            token
-        });
-
-        const options = {
-            url: `${scheme}${server}:${server_port}/swarm-remove`,
-            rejectUnauthorized: ssl_self_signed,
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Content-Length': payload.length
-            },
-            body: payload
-        };
-
-        request(options, (error, response) => {
-            if (!error && response.statusCode === 200) {
-                display_log(data => {
-                    res.end(data);
-                });
-            } else {
-                res.end('\nError connecting with server.');
-            }
-        });
+        superagent
+            .post(`${scheme}${server}:${server_port}/swarm-remove`)
+            .send({ token: token, host: host })
+            .set('accept', 'json')
+            .end((error, response) => {
+                if (!error || !response.text) {
+                    display_log(data => {
+                        res.end(response.text);
+                    });
+                } else {
+                    res.end('\nError connecting with server.');
+                }
+            });
     } else {
         res.end('\nError missing host name.');
     }
