@@ -10,10 +10,8 @@ const bodyParser = require('body-parser');
 const multer = require('multer');
 const getos = require('picluster-getos');
 const async = require('async');
-const {
-    exec
-} = require('child-process-promise');
 const sysinfo = require('systeminformation');
+const { exec } = require('child_process');
 
 let config = process.env.PICLUSTER_CONFIG ? JSON.parse(fs.readFileSync(process.env.PICLUSTER_CONFIG, 'utf8')) : JSON.parse(fs.readFileSync('../config.json', 'utf8'));
 const app = express();
@@ -71,6 +69,7 @@ sysinfo.networkInterfaces(data => {
 });
 
 function monitoring() {
+
     sysinfo.networkStats(network_device, data => {
         network_tx = Math.round(data[0].tx_sec / 1000);
         network_rx = Math.round(data[0].rx_sec / 1000);
@@ -349,44 +348,18 @@ app.post('/run', (req, res) => {
         });
     }
 
-    // Backwards compatability...
-    if (!('commands' in req.body) && 'command' in req.body) {
-        req.body.commands = req.body.command;
-    }
-
-    const commands = (typeof req.body.commands === 'string') ? [req.body.commands] : req.body.commands;
-
-    if (!(Array.isArray(commands))) {
-        return res.status(400).json({
-            output: 'Bad Request'
-        });
-    }
-
-    async.eachSeries(commands, (command, cb) => {
-        if (typeof command === 'string') {
-            command = [command];
+    exec(req.body.command, (error, stdout, stderr) => {
+        if (error) {
+            output.output.push(error.stderr);
+        } else {
+            output.output.push(stdout);
         }
-        if (!(Array.isArray(command))) {
-            return;
-        }
-        // Console.log('command', command);
-        exec(command.join(' '), {
-            cwd: __dirname
-        }).then(log => {
-            // Console.log('output', log);
-            output.output.push(`${log.stdout || ''}${log.stderr || ''}`);
-            return cb();
-        }).catch(error => {
-            // Console.log('error', err);
-            output.output.push(`${error.stdout || ''}${error.stderr || ''}`);
-            return cb(error);
-        });
+        res.json(output);
     }, err => {
         if (err) {
             console.error('error:', err);
         }
         // Console.log('output', output);
-        res.json(output);
     });
 });
 
