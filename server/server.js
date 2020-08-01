@@ -6,7 +6,6 @@ const tls = require('tls');
 const multer = require('multer');
 const express = require('express');
 const Moment = require('moment');
-const request = require('request');
 const async = require('async');
 const superagent = require('superagent');
 const bodyParser = require('body-parser');
@@ -1318,31 +1317,18 @@ function swarm_remove() {
             node
         } = config.layout[i];
 
-        //foo
-        const command = JSON.stringify({
-            command: 'docker swarm leave --force',
-            token
-        });
-
-        const options = {
-            url: `${scheme}${node}:${agent_port}/run`,
-            rejectUnauthorized: ssl_self_signed,
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Content-Length': command.length
-            },
-            body: command
-        };
-
-        request(options, (error, response) => {
-            if (error) {
-                console.log('An error has occurred.');
-            } else {
-                const results = JSON.parse(response.body);
-                addLog('\nNode:' + results.node + '\n' + results.output);
-            }
-        });
+        superagent
+            .post(`${scheme}${node}:${agent_port}/run`)
+            .send({ token: token, command: 'docker swarm leave --force' })
+            .set('accept', 'json')
+            .end((error, response) => {
+                if (error) {
+                    console.log('An error has occurred.');
+                } else {
+                    const results = JSON.parse(response.text);
+                    addLog('\nNode:' + results.node + '\n' + results.output);
+                }
+            });
     }
 }
 
@@ -1354,30 +1340,19 @@ function swarm_nodes(swarm_token, host) {
         if (host.indexOf(node) > -1) {
             console.log('\n' + node + ' is already set as the master.');
         } else {
-            const command = JSON.stringify({
-                command: 'docker swarm join --token ' + swarm_token + ' ' + host,
-                token
-            });
-
-            const options = {
-                url: `${scheme}${node}:${agent_port}/run`,
-                rejectUnauthorized: ssl_self_signed,
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Content-Length': command.length
-                },
-                body: command
-            };
-
-            request(options, (error, response) => {
-                if (error) {
-                    console.log('An error has occurred.');
-                } else {
-                    const results = JSON.parse(response.body);
-                    addLog('\nNode:' + results.node + '\n' + results.output);
-                }
-            });
+            superagent
+                .post(`${scheme}${server}:${server_port}/updateconfig`
+                    `${scheme}${node}:${agent_port}/run`)
+                .send({ token: token, command: 'docker swarm join --token ' + swarm_token + ' ' + host })
+                .set('accept', 'json')
+                .end((error, response) => {
+                    if (error) {
+                        console.log('An error has occurred.');
+                    } else {
+                        const results = JSON.parse(response.text);
+                        addLog('\nNode:' + results.node + '\n' + results.output);
+                    }
+                });
         }
     }
 }
@@ -1397,66 +1372,42 @@ app.post('/swarm-create', (req, res) => {
             } = config.layout[i];
 
             if (host.indexOf(node) > -1) {
-                const command = JSON.stringify({
-                    command: 'docker swarm init',
-                    token
-                });
-
-                const options = {
-                    url: `${scheme}${node}:${agent_port}/run`,
-                    rejectUnauthorized: ssl_self_signed,
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Content-Length': command.length
-                    },
-                    body: command
-                };
-
-                request(options, (error, response) => {
-                    if (error) {
-                        res.end('An error has occurred.');
-                    } else {
-                        const results = JSON.parse(response.body);
-                        const get_output = results.output.toString();
-
-                        if (get_output.indexOf('SWMTKN') > -1 || config.swarm_token) {
-                            if (!config.swarm_token) {
-                                const get_swarm_token_line = get_output.split('--token');
-                                const get_swarm_token = get_swarm_token_line[1].split(' ');
-                                config.swarm_token = get_swarm_token[1];
-
-                                const new_config = JSON.stringify({
-                                    payload: JSON.stringify(config),
-                                    token
-                                });
-
-                                const options = {
-                                    url: `${scheme}${server}:${server_port}/updateconfig`,
-                                    rejectUnauthorized: ssl_self_signed,
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json',
-                                        'Content-Length': new_config.length
-                                    },
-                                    body: new_config
-                                };
-
-                                request(options, error => {
-                                    if (error) {
-                                        res.end('An error occurred: ' + error);
-                                    } else {
-                                        bootstrap.status = 1;
-                                        console.log('\nAdded Swarm Token to config file.');
-                                    }
-                                });
-                            }
-                            swarm_nodes(config.swarm_token, host);
+                superagent
+                    .post(`${scheme}${node}:${agent_port}/run`)
+                    .send({ token: token, command: 'docker swarm init' })
+                    .set('accept', 'json')
+                    .end((error, response) => {
+                        if (error) {
+                            res.end('An error has occurred.');
                         } else {
-                            res.end('Error creating Swarm.' + results.output);
+                            const results = JSON.parse(response.text);
+                            const get_output = results.output.toString();
+
+                            if (get_output.indexOf('SWMTKN') > -1 || config.swarm_token) {
+                                if (!config.swarm_token) {
+                                    const get_swarm_token_line = get_output.split('--token');
+                                    const get_swarm_token = get_swarm_token_line[1].split(' ');
+                                    config.swarm_token = get_swarm_token[1];
+
+                                    superagent
+                                        .post(`${scheme}${server}:${server_port}/updateconfig`)
+                                        .send({ token: token, payload: JSON.stringify(config) })
+                                        .set('accept', 'json')
+                                        .end((error, response) => {
+                                            if (error) {
+                                                res.end('An error occurred: ' + error);
+                                            } else {
+                                                bootstrap.status = 1;
+                                                console.log('\nAdded Swarm Token to config file.');
+                                            }
+                                        });
+                                }
+                                swarm_nodes(config.swarm_token, host);
+                            } else {
+                                res.end('Error creating Swarm.' + results.output);
+                            }
                         }
-                    }
-                });
+                    });
             }
         }
         res.end('Swarm Operation Complete');
@@ -1481,30 +1432,18 @@ app.post('/swarm-network-create', (req, res) => {
             } = config.layout[i];
 
             if (host.indexOf(node) > -1) {
-                const command = JSON.stringify({
-                    command: 'docker network create -d overlay --attachable ' + network,
-                    token
-                });
-
-                const options = {
-                    url: `${scheme}${node}:${agent_port}/run`,
-                    rejectUnauthorized: ssl_self_signed,
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Content-Length': command.length
-                    },
-                    body: command
-                };
-
-                request(options, (error, response) => {
-                    if (error) {
-                        res.end('An error has occurred.');
-                    } else {
-                        const results = JSON.parse(response.body);
-                        res.end(results.output);
-                    }
-                });
+                superagent
+                    .post(`${scheme}${node}:${agent_port}/run`)
+                    .send({ token: token, command: 'docker network create -d overlay --attachable ' + network })
+                    .set('accept', 'json')
+                    .end((error, response) => {
+                        if (error) {
+                            res.end('An error has occurred.');
+                        } else {
+                            const results = JSON.parse(response.text);
+                            res.end(results.output);
+                        }
+                    });
             }
         }
         res.end('');
@@ -1514,30 +1453,18 @@ app.post('/swarm-network-create', (req, res) => {
 app.post('/swarm-remove', (req, res) => {
     if (config.swarm_token) {
         delete config.swarm_token;
-        const new_config = JSON.stringify({
-            payload: JSON.stringify(config),
-            token
-        });
-
-        const options = {
-            url: `${scheme}${server}:${server_port}/updateconfig`,
-            rejectUnauthorized: ssl_self_signed,
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Content-Length': new_config.length
-            },
-            body: new_config
-        };
-
-        request(options, error => {
-            if (error) {
-                console.log('An error occurred: ' + error);
-            } else {
-                bootstrap.status = 1;
-                console.log('\nRemoved Swarm Token from config file.');
-            }
-        });
+        superagent
+            .post(`${scheme}${server}:${server_port}/updateconfig`)
+            .send({ token: token, payload: JSON.stringify(config) })
+            .set('accept', 'json')
+            .end((error, response) => {
+                if (error) {
+                    console.log('An error occurred: ' + error);
+                } else {
+                    bootstrap.status = 1;
+                    console.log('\nRemoved Swarm Token from config file.');
+                }
+            });
     }
 
     const check_token = req.body.token;
@@ -1567,11 +1494,6 @@ app.post('/exec', (req, res) => {
     if ((check_token !== token) || (!check_token)) {
         res.end('\nError: Invalid Credentials');
     } else {
-        const command = JSON.stringify({
-            command: req.body.command,
-            token
-        });
-
         for (let i = 0; i < config.layout.length; i++) {
             const {
                 node
@@ -1588,26 +1510,19 @@ app.post('/exec', (req, res) => {
         }
 
         async.eachSeries(url, (url, cb) => {
-            const options = {
-                url,
-                rejectUnauthorized: ssl_self_signed,
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Content-Length': command.length
-                },
-                body: command
-            };
-
-            request(options, (err, body) => {
-                try {
-                    const data = JSON.parse(body.body);
-                    command_log += 'Node: ' + data.node + '\n\n' + data.output + '\n\n';
-                    cb(err);
-                } catch (error) {
-                    console.log(error);
-                }
-            });
+            superagent
+                .post(url)
+                .send({ token: token, command: req.body.command })
+                .set('accept', 'json')
+                .end((error, response) => {
+                    try {
+                        const data = JSON.parse(response.text);
+                        command_log += 'Node: ' + data.node + '\n\n' + data.output + '\n\n';
+                        cb(err);
+                    } catch (error) {
+                        console.log(error);
+                    }
+                });
         }, err => {
             if (err) {
                 console.log('\nError: ' + err);
@@ -1630,36 +1545,27 @@ app.post('/syslog', (req, res) => {
                 node
             } = config.layout[i];
 
-            const make_url = `${scheme}${node}:${agent_port}/run`;
+            const make_url = `
+                                $ { scheme }
+                                $ { node }: $ { agent_port }
+                                /run`;
             url.push(make_url);
         }
 
-        const command = JSON.stringify({
-            command: config.syslog,
-            token
-        });
-
         async.eachSeries(url, (url, cb) => {
-            const options = {
-                url,
-                rejectUnauthorized: ssl_self_signed,
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Content-Length': command.length
-                },
-                body: command
-            };
-
-            request(options, (err, body) => {
-                try {
-                    const data = JSON.parse(body.body);
-                    complete_syslog += 'Node: ' + data.node + '\n\n' + data.output + '\n\n';
-                    cb(err);
-                } catch (error) {
-                    console.log(error);
-                }
-            });
+            superagent
+                .post(url)
+                .send({ token: token, command: config.syslog })
+                .set('accept', 'json')
+                .end((error, response) => {
+                    try {
+                        const data = JSON.parse(response.text);
+                        complete_syslog += 'Node: ' + data.node + '\n\n' + data.output + '\n\n';
+                        cb(err);
+                    } catch (error) {
+                        console.log(error);
+                    }
+                });
         }, err => {
             if (err) {
                 console.log('\nError: ' + err);
@@ -1677,11 +1583,6 @@ app.post('/prune', (req, res) => {
     if ((check_token !== token) || (!check_token)) {
         res.end('\nError: Invalid Credentials');
     } else {
-        const command = JSON.stringify({
-            command: 'docker system prune -a -f',
-            token
-        });
-
         for (let i = 0; i < config.layout.length; i++) {
             const {
                 node
@@ -1691,26 +1592,19 @@ app.post('/prune', (req, res) => {
         }
 
         async.eachSeries(url, (url, cb) => {
-            const options = {
-                url,
-                rejectUnauthorized: ssl_self_signed,
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Content-Length': command.length
-                },
-                body: command
-            };
-
-            request(options, (err, body) => {
-                try {
-                    const data = JSON.parse(body.body);
-                    command_log += 'Node: ' + data.node + '\n\n' + data.output + '\n\n';
-                    cb(err);
-                } catch (error) {
-                    console.log(error);
-                }
-            });
+            superagent
+                .post(url)
+                .send({ token: token, commmand: 'docker system prune -a -f' })
+                .set('accept', 'json')
+                .end((error, response) => {
+                    try {
+                        const data = JSON.parse(response.text);
+                        command_log += 'Node: ' + data.node + '\n\n' + data.output + '\n\n';
+                        cb(err);
+                    } catch (error) {
+                        console.log(error);
+                    }
+                });
         }, err => {
             if (err) {
                 console.log('\nError: ' + err);
@@ -1723,20 +1617,16 @@ app.post('/prune', (req, res) => {
 function move_container(container, newhost) {
     console.log('\nMigrating container ' + container + ' to ' + newhost + '......');
     addLog('\nMigrating container ' + container + ' to ' + newhost + '......');
-
-    const options = {
-        url: `${scheme}${server}:${server_port}/changehost?token=${token}&container=${container}&newhost=${newhost}`,
-        rejectUnauthorized: ssl_self_signed,
-        method: 'GET'
-    };
-
-    request(options, error => {
-        if (error) {
-            console.log('Error connecting with server. ' + error);
-        } else {
-            config.automatic_heartbeat = 'enabled';
-        }
-    });
+    superagent
+        .get(`${scheme}${server}:${server_port}/changehost`)
+        .query({ token: token, container, newhost })
+        .end((error, response) => {
+            if (error) {
+                console.log('Error connecting with server. ' + error);
+            } else {
+                config.automatic_heartbeat = 'enabled';
+            }
+        });
 }
 
 function container_failover(container) {
@@ -1794,16 +1684,14 @@ function hb_check(node, container_port, container) {
                 container_failover(container);
             }
 
-            const options = {
-                url: `${scheme}${server}:${server_port}/restart?node=${node}&container=${container}&token=${token}`,
-                rejectUnauthorized: ssl_self_signed
-            };
-
-            http.get(options).on('error', e => {
-                console.error(e);
-            });
-
-            client.destroy();
+            superagent
+                .get(`${scheme}${server}:${server_port}/restart`)
+                .query({ token: token, container })
+                .end((error, response) => {
+                    if (error) {
+                        console.log(error);
+                    }
+                });
         });
     }
 }
@@ -1854,18 +1742,16 @@ app.get('/rsyslog', (req, res) => {
     if ((check_token !== token) || (!check_token)) {
         res.end('\nError: Invalid Credentials');
     } else {
-        const options = {
-            url: `${scheme}${rsyslog_host}:${agent_port}/rsyslog?token=${token}`,
-            rejectUnauthorized: ssl_self_signed
-        };
-
-        request(options, (error, response, body) => {
-            if (!error && response.statusCode === 200) {
-                res.end(body);
-            } else {
-                res.end('Error connecting with server. ' + error);
-            }
-        });
+        superagent
+            .get(`${scheme}${rsyslog_host}:${agent_port}/rsyslog`)
+            .query({ token: token })
+            .end((error, response) => {
+                if (!error && response.text) {
+                    res.end(response.text);
+                } else {
+                    res.end('Error connecting with server. ' + error);
+                }
+            });
     }
 });
 
@@ -1935,30 +1821,19 @@ app.post('/elasticsearch', (req, res) => {
                 console.log('\nDeleted Elasticsearch configuration.');
             }
         }
-        const new_config = JSON.stringify({
-            payload: JSON.stringify(config),
-            token
-        });
 
-        const options = {
-            url: `${scheme}${server}:${server_port}/updateconfig`,
-            rejectUnauthorized: ssl_self_signed,
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Content-Length': new_config.length
-            },
-            body: new_config
-        };
-
-        request(options, error => {
-            if (error) {
-                res.end('An error occurred: ' + error);
-            } else {
-                res.end();
-                console.log('\nUpdated Elasticsearch configuration.');
-            }
-        });
+        superagent
+            .post(`${scheme}${server}:${server_port}/updateconfig`)
+            .send({ token: token, payload: JSON.stringify(config) })
+            .set('accept', 'json')
+            .end((error, response) => {
+                if (error) {
+                    res.end('An error occurred: ' + error);
+                } else {
+                    res.end();
+                    console.log('\nUpdated Elasticsearch configuration.');
+                }
+            });
     }
 });
 
