@@ -966,15 +966,11 @@ app.get('/hb', (req, res) => {
     if ((check_token !== token) || (!check_token)) {
         res.end('\nError: Invalid Credentials');
     } else {
-        const options = {
-            url: `${scheme}${server}:${server_port}/hb?token=${token}`,
-            rejectUnauthorized: ssl_self_signed
-        };
         superagent
             .get(`${scheme}${server}:${server_port}/hb`)
-            .query({ token: check_token })
+            .query({ token: token })
             .end((error, response) => {
-                if (!error || !response.text) {
+                if (!error || response.text) {
                     display_log(data => {
                         res.end(response.text);
                     });
@@ -1028,7 +1024,7 @@ app.get('/getconfig', (req, res) => {
             .get(`${scheme}${server}:${server_port}/getconfig`)
             .query({ token: check_token })
             .end((error, response) => {
-                if (!error || !response.text) {
+                if (!error || response.text) {
                     res.end(response.text);
                 } else {
                     res.end('Error connecting with server. ' + error);

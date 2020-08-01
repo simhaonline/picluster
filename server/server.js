@@ -183,7 +183,7 @@ function automatic_heartbeat() {
     if (config.automatic_heartbeat.indexOf('enabled') > -1) {
         setTimeout(() => {
             superagent
-                .get(`${scheme}${server}:${server_port}/hb?token=${token}`)
+                .get(`${scheme}${server}:${server_port}/hb`)
                 .query({ token: token })
                 .end((error, response) => {
                     if (error) {
@@ -239,7 +239,10 @@ app.post('/bootstrap', (req, res) => {
 
                 superagent
                     .post(`${scheme}${server}:${server_port}/updateconfig`)
-                    .send(token, payload: JSON.stringify(config))
+                    .send({
+                        token,
+                        payload: JSON.stringify(config)
+                    })
                     .set('accept', 'json')
                     .end((error, response) => {
                         if (error) {
