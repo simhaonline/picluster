@@ -687,7 +687,7 @@ function sendFile(file, temp_file) {
 
     superagent
         .post(`${scheme}${server}:${server_port}/receive-file`)
-        .send({ token, name, file, formData })
+        .send({ formData })
         .set('accept', 'json')
         .end((error, response) => {
             if (error) {

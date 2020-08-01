@@ -1070,30 +1070,17 @@ app.get('/update-container', (req, res) => {
                 }
             }
         }
-
-        const new_config = JSON.stringify({
-            payload: JSON.stringify(config),
-            token
-        });
-
-        const options = {
-            url: `${scheme}${server}:${server_port}/updateconfig`,
-            rejectUnauthorized: ssl_self_signed,
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Content-Length': new_config.length
-            },
-            body: new_config
-        };
-
-        request(options, error => {
-            if (error) {
-                res.end(error);
-            } else {
-                res.end('\nModified Container Arguments for ' + container);
-            }
-        });
+        superagent
+            .post(`${scheme}${server}:${server_port}/updateconfig`)
+            .send({ token: token, payload: JSON.stringify(config) })
+            .set('accept', 'json')
+            .end((error, response) => {
+                if (error) {
+                    res.end(error);
+                } else {
+                    res.end('\nModified Container Arguments for ' + container);
+                }
+            });
     }
 });
 
@@ -1176,55 +1163,33 @@ app.get('/changehost', (req, res) => {
                 }
             }
 
-            const new_config = JSON.stringify({
-                payload: JSON.stringify(config),
-                token
-            });
-
-            const options = {
-                url: `${scheme}${server}:${server_port}/updateconfig`,
-                rejectUnauthorized: ssl_self_signed,
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Content-Length': new_config.length
-                },
-                body: new_config
-            };
-
-            request(options, error => {
-                if (error) {
-                    res.end(error);
-                } else {
-                    migrate(container, original_host, new_host, original_container_data);
-                    res.end('\nMigration may take awhile. Please observe the logs and running containers for the latest information.');
-                }
-            });
+            superagent
+                .post(`${scheme}${server}:${server_port}/updateconfig`)
+                .send({ token: token, payload: JSON.stringify(config) })
+                .set('accept', 'json')
+                .end((error, response) => {
+                    if (error) {
+                        res.end(error);
+                    } else {
+                        migrate(container, original_host, new_host, original_container_data);
+                        res.end('\nMigration may take awhile. Please observe the logs and running containers for the latest information.');
+                    }
+                });
         }
     }
 });
 
 function delete_function(name, node) {
-    const command = JSON.stringify({
-        command: 'docker container rm -f ' + name,
-        token
-    });
 
-    const options = {
-        url: scheme + node + ':' + agent_port + '/run',
-        rejectUnauthorized: ssl_self_signed,
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Content-Length': command.length
-        },
-        body: command
-    };
-    request(options, error => {
-        if (error) {
-            console.log('\n' + error);
-        }
-    });
+    superagent
+        .post(scheme + node + ':' + agent_port + '/run')
+        .send({ token: token, command: 'docker container rm -f ' + name })
+        .set('accept', 'json')
+        .end((error, response) => {
+            if (error) {
+                console.log('\n' + error);
+            }
+        });
 }
 
 app.post('/listcontainers', (req, res) => {
@@ -1277,11 +1242,13 @@ app.post('/listnodes', (req, res) => {
     }
 });
 
+//foo
 function copyToAgents(file, config_file, temp_file) {
     Object.keys(config.layout).forEach((get_node, i) => {
         const {
             node
         } = config.layout[i];
+
         const formData = {
             name: 'file',
             token,
@@ -1289,20 +1256,20 @@ function copyToAgents(file, config_file, temp_file) {
             file: fs.createReadStream(file)
         };
 
-        const form_options = {
-            url: `${scheme}${node}:${agent_port}/receive-file`,
-            rejectUnauthorized: ssl_self_signed,
-            formData
-        };
-
-        request.post(form_options, err => {
-            if (!err) {
-                if (!config_file) {
-                    addLog('\nCopied ' + file + ' to ' + node);
-                    console.log('\nCopied ' + file + ' to ' + node);
+        superagent
+            .post(`${scheme}${node}:${agent_port}/receive-file`)
+            .send(formData)
+            .set('accept', 'json')
+            .end((error, response) => {
+                if (error) {
+                    console.log('\nError sending file to agent: ' + error);
+                } else {
+                    if (!config_file) {
+                        addLog('\nCopied ' + file + ' to ' + node);
+                        console.log('\nCopied ' + file + ' to ' + node);
+                    }
                 }
-            }
-        });
+            });
     });
     if (temp_file) {
         fs.unlink(temp_file, error => {
@@ -1314,7 +1281,7 @@ function copyToAgents(file, config_file, temp_file) {
 }
 
 app.post('/receive-file', upload.single('file'), (req, res) => {
-    const check_token = req.body.token;
+    const check_token = req.body.formData.token;
     if ((check_token !== token) || (!check_token)) {
         res.end('\nError: Invalid Credentials');
     } else {

@@ -296,11 +296,11 @@ app.post('/receive-file', upload.single('file'), (req, res) => {
     if ((check_token !== token) || (!check_token)) {
         res.end('\nError: Invalid Credentials');
     } else {
-        fs.readFile(req.file.path, (err, data) => {
+        fs.readFile(req.body.file.path, (err, data) => {
             if (err) {
                 console.log('\nError reading file: ' + err);
             }
-            let newPath = '../' + req.file.originalname;
+            let newPath = req.body.file.path;
             let config_file = '';
 
             if (get_config_file) {
@@ -318,15 +318,14 @@ app.post('/receive-file', upload.single('file'), (req, res) => {
                             reloadConfig();
                         }
 
-                        if (req.file.originalname.indexOf('.zip') > -1) {
+                        if (req.body.file.path.indexOf('.zip') > -1) {
                             unzipFile(newPath);
+                            fs.unlink(req.body.file.path, error => {
+                                if (error) {
+                                    console.log(error);
+                                }
+                            });
                         }
-
-                        fs.unlink(req.file.path, error => {
-                            if (error) {
-                                console.log(error);
-                            }
-                        });
                     }
                 });
             }, 5000);
