@@ -350,7 +350,7 @@ app.post('/run', (req, res) => {
 
     exec(req.body.command, (error, stdout, stderr) => {
         if (error) {
-            output.output.push(error.stderr);
+            output.output.push(stderr);
         } else {
             output.output.push(stdout);
         }
