@@ -1242,7 +1242,6 @@ app.post('/listnodes', (req, res) => {
     }
 });
 
-//foo
 function copyToAgents(file, config_file, temp_file) {
     Object.keys(config.layout).forEach((get_node, i) => {
         const {
