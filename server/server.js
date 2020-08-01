@@ -237,14 +237,9 @@ app.post('/bootstrap', (req, res) => {
                     node: host
                 });
 
-                const new_config = JSON.stringify({
-                    payload: JSON.stringify(config),
-                    token
-                });
-
                 superagent
                     .post(`${scheme}${server}:${server_port}/updateconfig`)
-                    .send(new_config)
+                    .send(token, payload: JSON.stringify(config))
                     .set('accept', 'json')
                     .end((error, response) => {
                         if (error) {
