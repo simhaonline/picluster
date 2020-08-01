@@ -1317,6 +1317,8 @@ function swarm_remove() {
         const {
             node
         } = config.layout[i];
+
+        /foo
         const command = JSON.stringify({
             command: 'docker swarm leave --force',
             token

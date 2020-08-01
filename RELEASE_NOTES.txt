@@ -7,7 +7,7 @@
 * Migrated from legacy Request.js library
 
 ## Removed or Deprecated:
-* None
+* /clear-elasticsearch
 
 ## Bug Fixes:
 * Fixed output message when removing host from cluster
