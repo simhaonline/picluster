@@ -3,12 +3,13 @@ const https = require('https');
 const fs = require('fs');
 const net = require('net');
 const tls = require('tls');
-const bodyParser = require('body-parser');
 const multer = require('multer');
 const express = require('express');
 const Moment = require('moment');
 const request = require('request');
 const async = require('async');
+const superagent = require('superagent');
+const bodyParser = require('body-parser');
 
 const bootstrap = {
     status: 1
@@ -32,7 +33,6 @@ if (config.ssl_self_signed) {
 }
 
 const app = express();
-
 app.use(bodyParser.json());
 
 const upload = multer({
@@ -133,23 +133,35 @@ if (config.elasticsearch) {
     create_es_mappings(monitoring_mapping, 'picluster-monitoring');
 }
 
-function create_es_mappings(mapping, index) {
-    const options = {
-        url: config.elasticsearch + '/' + index,
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-            'Content-Length': mapping.length
-        },
-        body: JSON.stringify(mapping)
-    };
+//templates
+/** 
+superagent
+.get(`${scheme}${node}:${agent_port}/node-status`)
+.query({ token: token })
+.end((error, response) => {
+});
 
-    request(options, error => {
-        console.log('\nCreating Elasticsearch Map......');
-        if (error) {
-            console.log(error);
-        }
-    });
+  superagent
+            .post(`${scheme}${server}:${server_port}/updateconfig`)
+            .send({ token: check_token, payload })
+            .set('accept', 'json')
+            .end((error, response) => {
+            });
+
+*/
+function create_es_mappings(mapping, index) {
+    superagent
+        .put(config.elasticsearch + '/' + index)
+        .send(mapping)
+        .set('accept', 'json')
+        .end((error, response) => {
+            console.log('\nCreating Elasticsearch Map......');
+            if (error) {
+                console.log(error);
+            } else {
+                console.log(response.text);
+            }
+        });
 }
 
 if (config.automatic_heartbeat) {
@@ -170,14 +182,14 @@ if (config.automatic_heartbeat) {
 function automatic_heartbeat() {
     if (config.automatic_heartbeat.indexOf('enabled') > -1) {
         setTimeout(() => {
-            const options = {
-                url: `${scheme}${server}:${server_port}/hb?token=${token}`,
-                rejectUnauthorized: ssl_self_signed
-            };
-
-            request.get(options).on('error', e => {
-                console.error(e);
-            });
+            superagent
+                .get(`${scheme}${server}:${server_port}/hb?token=${token}`)
+                .query({ token: token })
+                .end((error, response) => {
+                    if (error) {
+                        console.log(error);
+                    }
+                });
             automatic_heartbeat();
         }, config.heartbeat_interval);
     } else {
@@ -427,29 +439,26 @@ app.get('/nodes', (req, res) => {
                 return;
             }
 
-            const options = {
-                url: `${scheme}${node}:${agent_port}/node-status?token=${token}`,
-                rejectUnauthorized: ssl_self_signed,
-                method: 'GET'
-            };
-
-            request(options, (error, response) => {
-                if (error) {
-                    console.error(error);
-                } else {
-                    try {
-                        const check = JSON.parse(response.body);
-                        if (check.cpu_percent > 0) {
-                            addData(check);
-                            if (config.elasticsearch) {
-                                elasticsearch_monitoring(check.cpu_percent / check.cpu_cores, check.hostname, check.disk_percentage, check.memory_percentage, check.total_running_containers, check.network_rx, check.network_tx);
+            superagent
+                .get(`${scheme}${node}:${agent_port}/node-status`)
+                .query({ token: token })
+                .end((error, response) => {
+                    if (error) {
+                        console.error(error);
+                    } else {
+                        try {
+                            const check = JSON.parse(response.text);
+                            if (check.cpu_percent > 0) {
+                                addData(check);
+                                if (config.elasticsearch) {
+                                    elasticsearch_monitoring(check.cpu_percent / check.cpu_cores, check.hostname, check.disk_percentage, check.memory_percentage, check.total_running_containers, check.network_rx, check.network_tx);
+                                }
                             }
+                        } catch (error2) {
+                            console.log('\nError gathering monitoring metrics: Invalid JSON or Credentials!' + error2);
                         }
-                    } catch (error2) {
-                        console.log('\nError gathering monitoring metrics: Invalid JSON or Credentials!' + error2);
                     }
-                }
-            });
+                });
         });
         setTimeout(() => {
             res.json(getData());

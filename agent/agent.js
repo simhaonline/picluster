@@ -13,6 +13,7 @@ const { exec } = require('child_process');
 const superagent = require('superagent');
 let config = process.env.PICLUSTER_CONFIG ? JSON.parse(fs.readFileSync(process.env.PICLUSTER_CONFIG, 'utf8')) : JSON.parse(fs.readFileSync('../config.json', 'utf8'));
 const app = express();
+app.use(bodyParser.json());
 
 if (config.ssl_self_signed) {
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';

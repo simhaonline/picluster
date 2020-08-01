@@ -4,9 +4,9 @@ const fs = require('fs');
 const path = require('path');
 const multer = require('multer');
 const express = require('express');
-const bodyParser = require('body-parser');
 const superagent = require('superagent');
 const { response } = require('express');
+const bodyParser = require('body-parser');
 
 let config = JSON.parse(fs.readFileSync((process.env.PICLUSTER_CONFIG ? process.env.PICLUSTER_CONFIG : '../config.json'), 'utf8'));
 
@@ -63,14 +63,14 @@ function getData() {
             .get(`${scheme}${server}:${server_port}/nodes`)
             .query({ token: token })
             .end((error, response) => {
-                if (!error || !response.text) {
-                    try {
+                try {
+                    if (!error || !response.text) {
                         nodedata = JSON.parse(response.text);
-                    } catch (error2) {
-                        console.error(error2);
+                    } else {
+                        console.log('\nError connecting with server. ' + error);
                     }
-                } else {
-                    console.log('\nError connecting with server. ' + error);
+                } catch (error2) {
+                    console.error(error2);
                 }
             });
         getData();
