@@ -10,6 +10,7 @@ const request = require('request');
 const async = require('async');
 const superagent = require('superagent');
 const bodyParser = require('body-parser');
+const { forOwn } = require('lodash');
 
 const bootstrap = {
     status: 1
@@ -143,7 +144,7 @@ superagent
 
   superagent
             .post(`${scheme}${server}:${server_port}/updateconfig`)
-            .send({ token: check_token, payload })
+            .send({ token: token, payload })
             .set('accept', 'json')
             .end((error, response) => {
             });
@@ -242,26 +243,19 @@ app.post('/bootstrap', (req, res) => {
                     token
                 });
 
-                const options = {
-                    url: `${scheme}${server}:${server_port}/updateconfig`,
-                    rejectUnauthorized: ssl_self_signed,
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Content-Length': new_config.length
-                    },
-                    body: new_config
-                };
-
-                request(options, error => {
-                    if (error) {
-                        res.end('An error occurred: ' + error);
-                    } else {
-                        bootstrap.status = 1;
-                        console.log('\nAdded node: ' + host + ' to the cluster.');
-                        statusCode = 1;
-                    }
-                });
+                superagent
+                    .post(`${scheme}${server}:${server_port}/updateconfig`)
+                    .send(new_config)
+                    .set('accept', 'json')
+                    .end((error, response) => {
+                        if (error) {
+                            res.end('An error occurred: ' + error);
+                        } else {
+                            bootstrap.status = 1;
+                            console.log('\nAdded node: ' + host + ' to the cluster.');
+                            statusCode = 1;
+                        }
+                    });
             } else {
                 bootstrap.status = 1;
                 console.log('\nnode: ' + host + ' is already part of the cluster.');
@@ -531,31 +525,19 @@ app.get('/manage-image', (req, res) => {
                 docker_command = 'docker image build ' + dockerFolder + '/' + what[i] + ' -t ' + what[i] + ' -f ' + dockerFolder + '/' + what[i] + '/Dockerfile';
             }
 
-            const command = JSON.stringify({
-                command: docker_command,
-                token
-            });
-
-            const options = {
-                url,
-                rejectUnauthorized: ssl_self_signed,
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Content-Length': command.length
-                },
-                body: command
-            };
-
-            request(options, (err, body) => {
-                try {
-                    const data = JSON.parse(body.body);
-                    command_log += 'Node: ' + data.node + '\n\n' + data.output + '\n\n';
-                    cb(err);
-                } catch (error) {
-                    console.log(error);
-                }
-            });
+            superagent
+                .post(url)
+                .send({ token: token, command: docker_command })
+                .set('accept', 'json')
+                .end((error, response) => {
+                    try {
+                        const data = JSON.parse(response.text);
+                        command_log += 'Node: ' + data.node + '\n\n' + data.output + '\n\n';
+                        cb(error);
+                    } catch (error) {
+                        console.log(error);
+                    }
+                });
             i++;
         }, err => {
             if (err) {
@@ -631,37 +613,24 @@ app.get('/manage', (req, res) => {
         async.eachSeries(url, (url, cb) => {
             let command;
             if (operation === 'create') {
-                command = JSON.stringify({
-                    command: docker_command + what[i] + ' ' + args[i] + ' ' + what[i],
-                    token
-                });
+                command = docker_command + what[i] + ' ' + args[i] + ' ' + what[i];
             } else {
-                command = JSON.stringify({
-                    command: docker_command + ' ' + what[i],
-                    token
-                });
+                command = docker_command + ' ' + what[i];
             }
 
-            const options = {
-                url,
-                rejectUnauthorized: ssl_self_signed,
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Content-Length': command.length
-                },
-                body: command
-            };
-
-            request(options, (err, body) => {
-                try {
-                    const data = JSON.parse(body.body);
-                    command_log += 'Node: ' + data.node + '\n\n' + data.output + '\n\n';
-                    cb(err);
-                } catch (error) {
-                    console.log(error);
-                }
-            });
+            superagent
+                .post(url)
+                .send({ token: token, command: command })
+                .set('accept', 'json')
+                .end((error, response) => {
+                    try {
+                        const data = JSON.parse(response.text);
+                        command_log += 'Node: ' + data.node + '\n\n' + data.output + '\n\n';
+                        cb(error);
+                    } catch (error) {
+                        console.log(error);
+                    }
+                });
             i++;
         }, err => {
             if (err) {
@@ -682,63 +651,38 @@ function migrate(container, original_host, new_host, original_container_data, uu
         }
     }
 
-    const command = JSON.stringify({
-        command: 'docker container rm -f ' + container,
-        token
-    });
-
-    const options = {
-        url: `${scheme}${original_host}:${agent_port}/run`,
-        rejectUnauthorized: ssl_self_signed,
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Content-Length': command.length
-        },
-        body: command
-    };
-
-    request(options, error => {
-        if (error) {
-            addLog('An error has occurred.');
-        } else {
-            let command = '';
-            if (uuid) {
-                const image_name = container.split('-' + uuid)[0];
-                command = JSON.stringify({
-                    command: 'docker image build ' + dockerFolder + '/' + image_name + ' -t ' + image_name + ' -f ' + dockerFolder + '/' + image_name + '/Dockerfile;docker container run -d --name ' + container + ' ' + original_container_data + ' ' + image_name,
-                    token
-                });
+    superagent
+        .post(`${scheme}${original_host}:${agent_port}/run`)
+        .send({ token: token, command: 'docker container rm -f ' + container })
+        .set('accept', 'json')
+        .end((error, response) => {
+            if (error) {
+                addLog('An error has occurred.');
             } else {
-                command = JSON.stringify({
-                    command: `docker image build ${dockerFolder}/${container} -t ${container} -f ${dockerFolder}/${container}/Dockerfile;docker container run -d --name ${container} ${original_container_data} ${container}`,
-                    token
-                });
+                let command = '';
+                if (uuid) {
+                    const image_name = container.split('-' + uuid)[0];
+                    command = 'docker image build ' + dockerFolder + '/' + image_name + ' -t ' + image_name + ' -f ' + dockerFolder + '/' + image_name + '/Dockerfile;docker container run -d --name ' + container + ' ' + original_container_data + ' ' + image_name;
+                } else {
+                    command = 'docker image build ' + dockerFolder + '/' + container + ' -t ' + container + ' -f ' + dockerFolder + '/' + container + '/Dockerfile;docker container run -d --name ' + container + ' ' + original_container_data + ' ' + container;
+                }
+
+                superagent
+                    .post(`${scheme}${new_host}:${agent_port}/run`)
+                    .send({ token: token, command: command })
+                    .set('accept', 'json')
+                    .end((second_error, second_response) => {
+                        if (second_error) {
+                            addLog('An error has occurred.');
+                        }
+                        if (config.automatic_heartbeat) {
+                            if (existing_automatic_heartbeat_value.indexOf('enabled') > -1) {
+                                config.automatic_heartbeat = existing_automatic_heartbeat_value;
+                            }
+                        }
+                    });
             }
-
-            const options = {
-                url: `${scheme}${new_host}:${agent_port}/run`,
-                rejectUnauthorized: ssl_self_signed,
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Content-Length': command.length
-                },
-                body: command
-            };
-
-            request(options, error => {
-                if (error) {
-                    addLog('An error has occurred.');
-                }
-                if (config.automatic_heartbeat) {
-                    if (existing_automatic_heartbeat_value.indexOf('enabled') > -1) {
-                        config.automatic_heartbeat = existing_automatic_heartbeat_value;
-                    }
-                }
-            });
-        }
-    });
+        });
 }
 
 app.get('/addhost', (req, res) => {
@@ -766,29 +710,17 @@ app.get('/addhost', (req, res) => {
                 node: host
             });
 
-            const new_config = JSON.stringify({
-                payload: JSON.stringify(config),
-                token
-            });
-
-            const options = {
-                url: `${scheme}${server}:${server_port}/updateconfig`,
-                rejectUnauthorized: ssl_self_signed,
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Content-Length': new_config.length
-                },
-                body: new_config
-            };
-
-            request(options, error => {
-                if (error) {
-                    res.end(error);
-                } else {
-                    res.end('\nAdded host ' + host + ' to the configuration.');
-                }
-            });
+            superagent
+                .post(`${scheme}${server}:${server_port}/updateconfig`)
+                .send({ token: token, payload: JSON.stringify(config) })
+                .set('accept', 'json')
+                .end((error, response) => {
+                    if (error) {
+                        res.end(error);
+                    } else {
+                        res.end('\nAdded host ' + host + ' to the configuration.');
+                    }
+                });
         } else {
             res.end('\nError: Host already exists');
         }
@@ -797,13 +729,10 @@ app.get('/addhost', (req, res) => {
 
 function elasticsearch_monitoring(cpu, node, disk, memory, total_running_containers, network_rx, network_tx) {
     const current_time = new Moment();
-    const options = {
-        url: config.elasticsearch + '/picluster-monitoring/picluster-monitoring',
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
+
+    superagent
+        .post(config.elasticsearch + '/picluster-monitoring/picluster-monitoring')
+        .send({
             date: current_time,
             cpu,
             node,
@@ -813,73 +742,30 @@ function elasticsearch_monitoring(cpu, node, disk, memory, total_running_contain
             network_tx,
             total_running_containers
         })
-    };
-
-    request(options, error => {
-        if (error) {
-            console.log(error);
-        }
-    });
+        .set('accept', 'json')
+        .end((error, response) => {
+            if (error) {
+                console.log(error);
+            }
+        });
 }
 
 function elasticsearch(data) {
     const current_time = new Moment();
 
-    const elasticsearch_data = JSON.stringify({
-        date: current_time,
-        data
-    });
-
-    const options = {
-        url: config.elasticsearch + '/picluster-logging/picluster-logging',
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Content-Length': elasticsearch_data.length
-        },
-        body: elasticsearch_data
-    };
-
-    request(options, error => {
-        if (error) {
-            console.log(error);
-        }
-    });
-}
-
-app.get('/clear-elasticsearch', (req, res) => {
-    const check_token = req.query.token;
-
-    if ((check_token !== token) || (!check_token)) {
-        res.end('\nError: Invalid Credentials');
-    } else {
-        const message = {
-            query: {
-                match_all: {}
-            }
-        };
-
-        const options = {
-            url: config.elasticsearch + '/picluster-logging',
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-                'Content-Length': message.length
-            },
-            body: JSON.stringify(message)
-        };
-
-        request(options, (error, response, body) => {
+    superagent
+        .post(config.elasticsearch + '/picluster-logging/picluster-logging')
+        .send({
+            date: current_time,
+            data
+        })
+        .set('accept', 'json')
+        .end((error, response) => {
             if (error) {
-                res.end(error);
                 console.log(error);
-            } else {
-                res.end('\nCleared Elasticsearch data');
-                console.log('\nCleared Elasticsearch data:' + body);
             }
         });
-    }
-});
+}
 
 app.get('/rmhost', (req, res) => {
     const check_token = req.query.token;
@@ -912,29 +798,17 @@ app.get('/rmhost', (req, res) => {
         }
     }
 
-    const new_config = JSON.stringify({
-        payload: JSON.stringify(config),
-        token
-    });
-
-    const options = {
-        url: `${scheme}${server}:${server_port}/updateconfig`,
-        rejectUnauthorized: ssl_self_signed,
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Content-Length': new_config.length
-        },
-        body: new_config
-    };
-
-    request(options, error => {
-        if (error) {
-            res.end(error);
-        } else {
-            res.end('\nRemoved host ' + host + ' from the configuration.');
-        }
-    });
+    superagent
+        .post(`${scheme}${server}:${server_port}/updateconfig`)
+        .send({ token, payload: JSON.stringify(config) })
+        .set('accept', 'json')
+        .end((error, response) => {
+            if (error) {
+                res.end(error);
+            } else {
+                res.end('\nRemoved host ' + host + ' from the configuration.');
+            }
+        });
 });
 
 app.get('/removecontainerconfig', (req, res) => {
@@ -992,29 +866,17 @@ app.get('/removecontainerconfig', (req, res) => {
             }
         }
 
-        const new_config = JSON.stringify({
-            payload: JSON.stringify(config),
-            token
-        });
-
-        const options = {
-            url: `${scheme}${server}:${server_port}/updateconfig`,
-            rejectUnauthorized: ssl_self_signed,
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Content-Length': new_config.length
-            },
-            body: new_config
-        };
-
-        request(options, error => {
-            if (error) {
-                res.end(error);
-            } else {
-                res.end('\nRemoved Container ' + container + ' from the configuration.');
-            }
-        });
+        superagent
+            .post(`${scheme}${server}:${server_port}/updateconfig`)
+            .send({ token: token, payload: JSON.stringify(config) })
+            .set('accept', 'json')
+            .end((error, response) => {
+                if (error) {
+                    res.end(error);
+                } else {
+                    res.end('\nRemoved Container ' + container + ' from the configuration.');
+                }
+            });
     }
 });
 
@@ -1084,40 +946,26 @@ app.get('/addcontainer', (req, res) => {
                 }
             }
 
-            const new_config = JSON.stringify({
-                payload: JSON.stringify(config),
-                token
-            });
-
-            const options = {
-                url: `${scheme}${server}:${server_port}/updateconfig`,
-                rejectUnauthorized: ssl_self_signed,
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Content-Length': new_config.length
-                },
-                body: new_config
-            };
-
-            const container_options = {
-                url: `${scheme}${server}:${server_port}/changehost?token=${token}&container=${container}&newhost=${host}`,
-                rejectUnauthorized: ssl_self_signed
-            };
-
-            request(options, error => {
-                if (error) {
-                    res.end(error);
-                } else {
-                    request(container_options, (error, response) => {
-                        if (!error && response.statusCode === 200) {
-                            res.end('\nAdded ' + container + ' to the configuration.');
-                        } else {
-                            res.end('\nError connecting with server.');
-                        }
-                    });
-                }
-            });
+            superagent
+                .post(`${scheme}${server}:${server_port}/updateconfig`)
+                .send({ token: token, payload: JSON.stringify(config) })
+                .set('accept', 'json')
+                .end((error, response) => {
+                    if (error) {
+                        res.end(error);
+                    } else {
+                        superagent
+                            .get(`${scheme}${server}:${server_port}/changehost`)
+                            .query({ token: token, container, newhost: host, })
+                            .end((error, response) => {
+                                if (!error && response.text) {
+                                    res.end('\nAdded ' + container + ' to the configuration.');
+                                } else {
+                                    res.end('\nError connecting with server.');
+                                }
+                            });
+                    }
+                });
         }
     }
 });

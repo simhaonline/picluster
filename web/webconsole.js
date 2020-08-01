@@ -59,20 +59,20 @@ if (fs.existsSync(path.normalize(doc_dir))) {
 
 function getData() {
     setTimeout(() => {
-        superagent
-            .get(`${scheme}${server}:${server_port}/nodes`)
-            .query({ token: token })
-            .end((error, response) => {
-                try {
-                    if (!error || !response.text) {
-                        nodedata = JSON.parse(response.text);
-                    } else {
+        try {
+            superagent
+                .get(`${scheme}${server}:${server_port}/nodes`)
+                .query({ token: token })
+                .end((error, response) => {
+                    if (error || !response.text) {
                         console.log('\nError connecting with server. ' + error);
+                    } else if (response.text) {
+                        nodedata = JSON.parse(response.text);
                     }
-                } catch (error2) {
-                    console.error(error2);
-                }
-            });
+                });
+        } catch (error2) {
+            console.error(error2);
+        }
         getData();
     }, 5000);
 }
@@ -403,16 +403,20 @@ app.post('/listcommands', (req, res) => {
 function display_log(callback) {
     clear_log(() => {
         setTimeout(() => {
-            superagent
-                .get(`${scheme}${server}:${server_port}/log`)
-                .query({ token: token })
-                .end((error, response) => {
-                    if (!error || !response.text) {
-                        callback('\nError connecting with server.');
-                    } else {
-                        callback(response.text);
-                    }
-                });
+            try {
+                superagent
+                    .get(`${scheme}${server}:${server_port}/log`)
+                    .query({ token: token })
+                    .end((error, response) => {
+                        if (!error || !response.text) {
+                            callback('\nError connecting with server.');
+                        } else {
+                            callback(response.text);
+                        }
+                    });
+            } catch (error) {
+                console.log(error);
+            }
         }, request_timeout);
     });
 }
@@ -865,7 +869,7 @@ app.post('/rmhost', (req, res) => {
             .get(`${scheme}${server}:${server_port}/rmhost`)
             .query({ token: check_token, host: host })
             .end((error, response) => {
-                if (!error || !response.text) {
+                if (!error || response.text) {
                     display_log(data => {
                         res.end(response.text);
                     });

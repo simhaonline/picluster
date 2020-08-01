@@ -394,7 +394,7 @@ function bootstrapNode() {
                 .end((err, res) => {
                     if (err) {
                         console.log('Bootstrap failed due to an error or another bootstrap operation already in progress.\n');
-                        console.log(error);
+                        console.log(err);
                         bootstrapNode();
                     } else {
                         try {
