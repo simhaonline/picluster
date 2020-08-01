@@ -472,11 +472,16 @@ app.get('/syslog', (req, res) => {
             .send({ token: check_token })
             .set('accept', 'json')
             .end((error, response) => {
-                if (!error || !response.text) {
-                    res.end(response.text);
-                } else {
-                    res.end('\nAn error has occurred while retrieving the Syslog.');
+                try {
+                    if (!error || response.text) {
+                        res.end(response.text);
+                    } else {
+                        res.end('\nAn error has occurred while retrieving the Syslog.');
+                    }
+                } catch (error2) {
+                    console.log(error2);
                 }
+
             });
     }
 });
@@ -491,7 +496,7 @@ app.get('/rsyslog', (req, res) => {
             .get(`${scheme}${server}:${server_port}/rsyslog`)
             .query({ token: check_token })
             .end((error, response) => {
-                if (!error || !response.text) {
+                if (!error || response.text) {
                     res.end(response.text);
                 } else {
                     res.end('\nError connecting with server.');
@@ -869,12 +874,16 @@ app.post('/rmhost', (req, res) => {
             .get(`${scheme}${server}:${server_port}/rmhost`)
             .query({ token: check_token, host: host })
             .end((error, response) => {
-                if (!error || response.text) {
-                    display_log(data => {
-                        res.end(response.text);
-                    });
-                } else {
-                    res.end('\nError connecting with server.' + response.text);
+                try {
+                    if (!error || response.text) {
+                        display_log(data => {
+                            res.end(response.text);
+                        });
+                    } else {
+                        res.end('\nError connecting with server.' + response.text);
+                    }
+                } catch (error2) {
+
                 }
             });
     }

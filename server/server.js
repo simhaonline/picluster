@@ -1545,10 +1545,7 @@ app.post('/syslog', (req, res) => {
                 node
             } = config.layout[i];
 
-            const make_url = `
-                                $ { scheme }
-                                $ { node }: $ { agent_port }
-                                /run`;
+            make_url = `${scheme}${node}:${agent_port}/run`;
             url.push(make_url);
         }
 
@@ -1561,7 +1558,7 @@ app.post('/syslog', (req, res) => {
                     try {
                         const data = JSON.parse(response.text);
                         complete_syslog += 'Node: ' + data.node + '\n\n' + data.output + '\n\n';
-                        cb(err);
+                        cb(error);
                     } catch (error) {
                         console.log(error);
                     }
