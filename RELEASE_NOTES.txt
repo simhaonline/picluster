@@ -5,6 +5,10 @@
 
 ## Enhancements:
 * Migrated from legacy Request.js library
+* Fixed CSS in the Command Output Window to be compatible with Firefox 
+* Updated Travis CI testing to Node 14.x
+* Agent - Changed Deprecated exec() API to child_process.exec()
+* Updated Grafana dashboards for ES 7.x
 
 ## Removed or Deprecated:
 * /clear-elasticsearch
@@ -15,3 +19,9 @@
 * Fixed Heartbeat size
 * Fixed Docker image tags for pulling images from the registry
 * Fixed Docker autocomplete for pulling images from the registry
+* Fixed Security Vulnerabilities with NPM packages
+* Fixed Date field for Elasticsearch
+* API changes for System metrics in Agent.js.
+* Updated deprecated Node.js libraries 
+* Fixed Pictl create
+* Fixed Elasticsearch Running Container visualization
