@@ -336,7 +336,7 @@ app.post('/receive-file', upload.single('file'), (req, res) => {
 
 app.post('/run', (req, res) => {
     const output = {
-        output: [],
+        output: "",
         node
     };
 
@@ -350,9 +350,9 @@ app.post('/run', (req, res) => {
 
     exec(req.body.command, (error, stdout, stderr) => {
         if (error) {
-            output.output.push(stderr);
+            output.output = stderr;
         } else {
-            output.output.push(stdout);
+            output.output = stdout;
         }
         res.json(output);
     }, err => {
