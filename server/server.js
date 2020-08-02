@@ -1516,7 +1516,7 @@ app.post('/exec', (req, res) => {
                     try {
                         const data = JSON.parse(response.text);
                         command_log += 'Node: ' + data.node + '\n\n' + data.output + '\n\n';
-                        cb(err);
+                        cb(error);
                     } catch (error) {
                         console.log(error);
                     }
@@ -1589,13 +1589,13 @@ app.post('/prune', (req, res) => {
         async.eachSeries(url, (url, cb) => {
             superagent
                 .post(url)
-                .send({ token: token, commmand: 'docker system prune -a -f' })
+                .send({ token: token, command: 'docker system prune -a -f' })
                 .set('accept', 'json')
                 .end((error, response) => {
                     try {
                         const data = JSON.parse(response.text);
                         command_log += 'Node: ' + data.node + '\n\n' + data.output + '\n\n';
-                        cb(err);
+                        cb(error);
                     } catch (error) {
                         console.log(error);
                     }
