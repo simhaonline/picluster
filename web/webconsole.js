@@ -148,12 +148,14 @@ app.post('/sendconfig', (req, res) => {
             .send({ token: check_token, payload })
             .set('accept', 'json')
             .end((error, response) => {
-                if (error) {
-                    res.end(error);
-                } else {
-                    updateConfig(payload);
-                    res.end(response.text);
-                }
+                try {
+                    if (error) {
+                        res.end(error);
+                    } else {
+                        updateConfig(payload);
+                        res.end(response.text);
+                    }
+                } catch (error) {}
             });
     }
 });
