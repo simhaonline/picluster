@@ -1083,6 +1083,14 @@ app.get('/update-container', (req, res) => {
 
         if (heartbeat_args) {
             let proceed = 0;
+            if (config.hb.length === 0) {
+                for (let i = 0; i < config.layout.length; i++) {
+                    config.hb.push({
+                        node: config.layout[i].node
+                    });
+                }
+            }
+
             Object.keys(config.hb).forEach((get_node, i) => {
                 Object.keys(config.hb[i]).forEach(key => {
                     if (key.indexOf(container) > -1) {

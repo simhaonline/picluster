@@ -14,6 +14,7 @@
 * /clear-elasticsearch
 
 ## Bug Fixes:
+* Repopulates nodes in config.json for Heartbeat if empty
 * Fixed output message when removing host from cluster
 * Fixed Prune Window size
 * Fixed Heartbeat size
