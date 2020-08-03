@@ -1034,36 +1034,39 @@ app.get('/update-container', (req, res) => {
     const {
         service_port
     } = req.query;
+    const {
+        lb_hosts
+    } = req.query;
 
     if ((check_token !== token) || (!check_token) || container.indexOf('*') > -1) {
         res.end('\nError: Invalid Credentials');
     } else {
 
-        if (container_port && server_port && config.loadbalancer) {
+        if (lb_hosts && container_port && server_port && config.loadbalancer) {
             let proceed = 0;
 
             Object.keys(config.loadbalancer).forEach((get_node, i) => {
                 Object.keys(config.loadbalancer[i]).forEach(key => {
-                    const get_container_name = failover_constraints.split(',');
+                    const get_container_name = lb_hosts.split(',');
                     const parse_container = get_container_name[0];
 
                     if (config.loadbalancer[i][key].indexOf(parse_container) > -1) {
-                        if (failover_constraints.indexOf('none') > -1) {
+                        if (lb_hosts.indexOf('none') > -1) {
                             proceed = 0;
                         } else {
                             proceed = 1;
-                            config.loadbalancer[i][key] = failover_constraints + ',' + container_port + ',' + service_port;
+                            config.loadbalancer[i][key] = lb_hosts + ',' + container_port + ',' + service_port;
                         }
                     }
                 });
             });
 
             if (proceed === 0) {
-                if (failover_constraints.indexOf('none') > -1) {
-                    for (let i = 0; i < config.failover_constraints.length; i++) {
+                if (config.loadbalancer.indexOf('none') > -1) {
+                    for (let i = 0; i < config.loadbalancer.length; i++) {
                         for (const key in config.loadbalancer[i]) {
                             if (container.length > 0) {
-                                const analyze = config.failover_constraints[i][key].split(',');
+                                const analyze = config.lb[i][key].split(',');
                                 if (container.indexOf(analyze[0]) > -1) {
                                     config.loadbalancer.splice(i, i + 1);
                                 }
@@ -1072,13 +1075,13 @@ app.get('/update-container', (req, res) => {
                     }
                 } else {
                     config.loadbalancer.push({
-                        container: failover_constraints + ',' + container_port + ',' + service_port
+                        container: lb_hosts + ',' + container_port + ',' + service_port
                     });
                 }
             }
             configure_loadbalancer();
-        } else {
 
+        } else {
             if (container_args) {
                 Object.keys(config.layout).forEach((get_node, i) => {
                     Object.keys(config.layout[i]).forEach(key => {

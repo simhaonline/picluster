@@ -624,13 +624,17 @@ app.post('/update-container', (req, res) => {
     const {
         service_port
     } = req.body;
+    const {
+        lb_hosts
+    } = req.body;
+
 
     if ((check_token !== token) || (!check_token)) {
         res.end('\nError: Invalid Credentials');
     } else if (container) {
         superagent
             .get(`${scheme}${server}:${server_port}/update-container`)
-            .query({ token: check_token, container_port: container_port, service_port: service_port, container: container, container_args: container_args, heartbeat_args: heartbeat_args, failover_constraints: failover_constraints })
+            .query({ token: check_token, lb_hosts: lbhosts, container_port: container_port, service_port: service_port, container: container, container_args: container_args, heartbeat_args: heartbeat_args, failover_constraints: failover_constraints })
             .end((error, response) => {
                 try {
                     if (!error || response.text) {

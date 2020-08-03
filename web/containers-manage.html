@@ -11,15 +11,17 @@
         $(function() {
             var option = '';
             var checkbox = '';
+            var lb_checkbox = '';
             $.get("/nodes?token=" + parent.token, function(data) {
                 for (var i in data.nodes) {
                     option += '<option value="' + data.nodes[i] + '">' + data.nodes[i] + '</option>';
                     checkbox += '<input type="checkbox" name="container_heartbeat_fieldset" class="modal_input" value="' + data.nodes[i] + '" /><label id="windowfont" for="container_heartbeat_fieldset">' + data.nodes[i] + '</label><br>';
+                    lb_checkbox += '<input type="checkbox" name="container_lb_fieldset" class="modal_input" value="' + data.nodes[i] + '" /><label id="windowfont" for="container_lb_fieldset">' + data.nodes[i] + '</label><br>';
                 }
                 option += '<option value="' + '*' + '">' + '*' + '</option>';
                 $('#node_list_add').append(option);
                 $('#node_failover_constraint').append(checkbox);
-                $('#loadbalancer_hosts').append(checkbox);
+                $('#loadbalancer_hosts').append(lb_checkbox);
             });
         });
 
@@ -66,6 +68,7 @@
             var container_add_args = $("#container_args").val() || $("#modify_container_arguments").val();
             var heartbeat_add_args = $("#heartbeat_args").val();
             var container_heartbeat_fieldset = document.getElementsByName('container_heartbeat_fieldset');
+            var container_lb_fieldset = document.getElementsByName('container_lb_fieldset');
             var radio_container_add = $('input[id=radio_container_add]:checked').val();
             var radio_container_modify = $('input[id=radio_container_modify]:checked').val();
             var radio_container_arg_modify = $('input[id=radio_modify_args]:checked').val();
@@ -82,6 +85,7 @@
             var command;
             var path;
             var failover_constraints = 'none';
+            var lb_hosts = 'none';
             var operation;
 
             if (radio_container_modify) {
@@ -95,8 +99,18 @@
                 }
             });
 
+            container_lb_fieldset.forEach(function(node, i) {
+                if (container_lb_fieldset[i].checked) {
+                    lb_hosts += ',' + node.value;
+                }
+            });
+
             if (failover_constraints.indexOf('none,') > -1) {
                 failover_constraints = failover_constraints.replace('none,', '');
+            }
+
+            if (lb_hosts.indexOf('none,') > -1) {
+                lb_hosts = lb_hosts.replace('none,', '');
             }
 
             if (radio_start) {
@@ -161,6 +175,7 @@
                         container: container_modify,
                         service_port: service_port,
                         container_port: container_port,
+                        lb_hosts: container_modify + ',' + lb_hosts,
                         heartbeat_args: heartbeat_add_args,
                         failover_constraints: container_modify + ',' + failover_constraints,
                         newhost: node_modify
@@ -225,6 +240,7 @@
             })
 
             $("input[id$='radio_modify_constraints']").click(function() {
+                $(this).is(":checked") ? $("#loadbalancer_hosts").hide() : '';
                 $(this).is(":checked") ? $("#container_list_modify_options").hide() : '';
                 $(this).is(":checked") ? $("#loadbalancer_hosts_label").hide() : '';
                 $(this).is(":checked") ? $("#container_list_add_options").show() : '';
@@ -240,7 +256,6 @@
                 $(this).is(":checked") ? $("#service_port").show() : '';
                 $(this).is(":checked") ? $("#service_port_args").show() : '';
                 $(this).is(":checked") ? $("#loadbalancer_options").show() : '';
-                $(this).is(":checked") ? $("#node_failover_constraint").hide() : '';
                 get_container_info();
             });
 
@@ -269,6 +284,8 @@
             $("#service_port").hide();
             $("#service_port_args").hide();
             $('#loadbalancer_hosts').hide();
+            $('#container_lb_fieldset').hide();
+
         });
     </script>
 </head>
