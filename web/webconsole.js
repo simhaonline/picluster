@@ -634,7 +634,7 @@ app.post('/update-container', (req, res) => {
     } else if (container) {
         superagent
             .get(`${scheme}${server}:${server_port}/update-container`)
-            .query({ token: check_token, lb_hosts: lbhosts, container_port: container_port, service_port: service_port, container: container, container_args: container_args, heartbeat_args: heartbeat_args, failover_constraints: failover_constraints })
+            .query({ token: check_token, lb_hosts: lb_hosts, container_port: container_port, service_port: service_port, container: container, container_args: container_args, heartbeat_args: heartbeat_args, failover_constraints: failover_constraints })
             .end((error, response) => {
                 try {
                     if (!error || response.text) {
