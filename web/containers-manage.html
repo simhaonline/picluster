@@ -292,6 +292,9 @@
                 $(this).is(":checked") ? $("#container_list_add_options").hide() : '';
                 $(this).is(":checked") ? $("#container_list_modify").show() : '';
                 $(this).is(":checked") ? $("#container_list_modify_options").show() : '';
+                $(this).is(":checked") ? $("#loadbalancer_hosts_label").hide() : '';
+                $(this).is(":checked") ? $("#container_port_label").hide() : '';
+                $(this).is(":checked") ? $("#loadbalancer_hosts").hide() : '';
             })
 
             $("#container_list_options_fieldset").hide();
@@ -305,7 +308,6 @@
             $("#service_port_args").hide();
             $('#loadbalancer_hosts').hide();
             $('#container_lb_fieldset').hide();
-
         });
     </script>
 </head>
@@ -359,7 +361,7 @@
 
                     <div id="loadbalancer_options">
                         <div id="loadbalancer_hosts">
-                            <label id="loadbalancer_hosts_label" class="windowfont">Select Nodes for Loadbalancer</label><br>
+                            <label id="loadbalancer_hosts_label" class="windowfont">Select Nodes for the Load Balancer</label><br>
                             <br>
                         </div>
                         <br>
