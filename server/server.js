@@ -1042,7 +1042,7 @@ app.get('/update-container', (req, res) => {
         res.end('\nError: Invalid Credentials');
     } else {
 
-        if (lb_hosts && container_port && server_port && config.loadbalancer) {
+        if (lb_hosts) {
             let proceed = 0;
 
             Object.keys(config.loadbalancer).forEach((get_node, i) => {
@@ -1062,11 +1062,11 @@ app.get('/update-container', (req, res) => {
             });
 
             if (proceed === 0) {
-                if (config.loadbalancer.indexOf('none') > -1) {
+                if (lb_hosts.indexOf('none') > -1) {
                     for (let i = 0; i < config.loadbalancer.length; i++) {
                         for (const key in config.loadbalancer[i]) {
                             if (container.length > 0) {
-                                const analyze = config.lb[i][key].split(',');
+                                const analyze = config.loadbalancer[i][key].split(',');
                                 if (container.indexOf(analyze[0]) > -1) {
                                     config.loadbalancer.splice(i, i + 1);
                                 }
@@ -1075,7 +1075,7 @@ app.get('/update-container', (req, res) => {
                     }
                 } else {
                     config.loadbalancer.push({
-                        container: lb_hosts + ',' + container_port + ',' + service_port
+                        container: lb_hosts
                     });
                 }
             }
