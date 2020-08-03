@@ -211,7 +211,6 @@
                 });
 
                 var container_heartbeat_fieldset = document.getElementsByName('container_heartbeat_fieldset');
-
                 Object.keys(check_data.container_host_constraints).forEach((get_node, i) => {
                     Object.keys(check_data.container_host_constraints[i]).forEach(key => {
                         const analyze = check_data.container_host_constraints[i][key].split(',');
@@ -222,6 +221,27 @@
 
                                 if (analyze.indexOf(current) > -1) {
                                     container_heartbeat_fieldset[z].click();
+                                }
+                            });
+                        }
+                    });
+                });
+
+                var container_lb_fieldset = document.getElementsByName('container_lb_fieldset');
+                Object.keys(check_data.loadbalancer).forEach((get_node, i) => {
+                    Object.keys(check_data.loadbalancer[i]).forEach(key => {
+                        const analyze = check_data.loadbalancer[i][key].split(',');
+                        if (document.getElementById("container_list").value.indexOf(analyze[0]) > -1) {
+
+                            container_lb_fieldset.forEach(function(node, z) {
+                                var current = container_lb_fieldset[z].value;
+
+                                if (analyze.indexOf(current) > -1) {
+                                    container_lb_fieldset[z].click();
+                                    var container_port = document.getElementById("container_port_args");
+                                    var service_port = document.getElementById("service_port_args");
+                                    container_port.value = analyze[2];
+                                    service_port.value = analyze[3];
                                 }
                             });
                         }
