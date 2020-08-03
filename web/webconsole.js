@@ -618,21 +618,29 @@ app.post('/update-container', (req, res) => {
     const {
         failover_constraints
     } = req.body;
+    const {
+        container_port
+    } = req.body;
+    const {
+        service_port
+    } = req.body;
 
     if ((check_token !== token) || (!check_token)) {
         res.end('\nError: Invalid Credentials');
     } else if (container) {
         superagent
             .get(`${scheme}${server}:${server_port}/update-container`)
-            .query({ token: check_token, container: container, container_args: container_args, heartbeat_args: heartbeat_args, failover_constraints: failover_constraints })
+            .query({ token: check_token, container_port: container_port, service_port: service_port, container: container, container_args: container_args, heartbeat_args: heartbeat_args, failover_constraints: failover_constraints })
             .end((error, response) => {
-                if (!error || !response.text) {
-                    display_log(data => {
-                        res.end(response.text);
-                    });
-                } else {
-                    res.end('\nError connecting with server.');
-                }
+                try {
+                    if (!error || response.text) {
+                        display_log(data => {
+                            res.end(response.text);
+                        });
+                    } else {
+                        res.end('\nError connecting with server.');
+                    }
+                } catch (error) {};
             });
     } else {
         res.end('\nError missing some parameters.');
@@ -1024,11 +1032,13 @@ app.get('/getconfig', (req, res) => {
             .get(`${scheme}${server}:${server_port}/getconfig`)
             .query({ token: check_token })
             .end((error, response) => {
-                if (!error || response.text) {
-                    res.end(response.text);
-                } else {
-                    res.end('Error connecting with server. ' + error);
-                }
+                try {
+                    if (!error || response.text) {
+                        res.end(response.text);
+                    } else {
+                        res.end('Error connecting with server. ' + error);
+                    }
+                } catch (error) {}
             });
     }
 });

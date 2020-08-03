@@ -10,6 +10,8 @@ const async = require('async');
 const superagent = require('superagent');
 const bodyParser = require('body-parser');
 const { forOwn } = require('lodash');
+const { parse } = require('path');
+const { exec } = require('child_process');
 
 const bootstrap = {
     status: 1
@@ -57,6 +59,10 @@ let {
 let dockerFolder = config.docker;
 const container_faillog = [];
 const picluster_release = '2.6';
+
+if (config.loadbalancer) {
+    configure_loadbalancer();
+}
 
 if (config.elasticsearch) {
     const mapping = {
@@ -967,6 +973,47 @@ app.get('/addcontainer', (req, res) => {
     }
 });
 
+function configure_loadbalancer() {
+    let final_nginx_config = "";
+
+    Object.keys(config.loadbalancer).forEach((get_node, i) => {
+        Object.keys(config.loadbalancer[i]).forEach(key => {
+            final_nginx_config = "";
+            const parse_data = config.loadbalancer[i][key].split(',');
+            const container_name = parse_data[0];
+            const container_port = parse_data[parse_data.length - 2];
+            const service_port = parse_data[parse_data.length - 1];
+            const lb_hosts = parse_data.toString().split(',');
+
+            final_nginx_config = 'stream { \n upstream ' + container_name + ' {';
+            for (let i = 1; i < lb_hosts.length - 2; i++) {
+                final_nginx_config += '\nserver ' + lb_hosts[i] + ':' + container_port + ';';
+            }
+            final_nginx_config += '\n } \nserver { \n listen ' + ' ' + service_port + '; \n proxy_pass ' + container_name + ';\n } \n }';
+
+            const container_config = container_name + '.conf';
+            fs.writeFile(container_config, final_nginx_config, err => {
+                if (err) {
+                    console.log(err);
+                } else {
+                    command = 'docker cp ' + container_config + ' picluster_lb:/etc/nginx/conf.d/;docker container restart picluster_lb ';
+                    exec(command, (error, stdout, stderr) => {
+                        if (error) {
+                            console.log(stderr);
+                        } else {
+                            console.log(stdout);
+                        }
+                    }, err => {
+                        if (err) {
+                            console.error('error:', err);
+                        }
+                    });
+                }
+            });
+        });
+    });
+}
+
 app.get('/update-container', (req, res) => {
     const check_token = req.query.token;
     const {
@@ -981,34 +1028,31 @@ app.get('/update-container', (req, res) => {
     const {
         failover_constraints
     } = req.query;
+    const {
+        container_port
+    } = req.query;
+    const {
+        service_port
+    } = req.query;
 
     if ((check_token !== token) || (!check_token) || container.indexOf('*') > -1) {
         res.end('\nError: Invalid Credentials');
     } else {
-        if (container_args) {
-            Object.keys(config.layout).forEach((get_node, i) => {
-                Object.keys(config.layout[i]).forEach(key => {
-                    if (key.indexOf(container) > -1) {
-                        config.layout[i][key] = container_args;
-                    }
-                });
-            });
-        }
 
-        if (failover_constraints) {
+        if (container_port && server_port && config.loadbalancer) {
             let proceed = 0;
 
-            Object.keys(config.container_host_constraints).forEach((get_node, i) => {
-                Object.keys(config.container_host_constraints[i]).forEach(key => {
+            Object.keys(config.loadbalancer).forEach((get_node, i) => {
+                Object.keys(config.loadbalancer[i]).forEach(key => {
                     const get_container_name = failover_constraints.split(',');
                     const parse_container = get_container_name[0];
 
-                    if (config.container_host_constraints[i][key].indexOf(parse_container) > -1) {
+                    if (config.loadbalancer[i][key].indexOf(parse_container) > -1) {
                         if (failover_constraints.indexOf('none') > -1) {
                             proceed = 0;
                         } else {
                             proceed = 1;
-                            config.container_host_constraints[i][key] = failover_constraints;
+                            config.loadbalancer[i][key] = failover_constraints + ',' + container_port + ',' + service_port;
                         }
                     }
                 });
@@ -1016,53 +1060,104 @@ app.get('/update-container', (req, res) => {
 
             if (proceed === 0) {
                 if (failover_constraints.indexOf('none') > -1) {
-                    for (let i = 0; i < config.container_host_constraints.length; i++) {
-                        for (const key in config.container_host_constraints[i]) {
+                    for (let i = 0; i < config.failover_constraints.length; i++) {
+                        for (const key in config.loadbalancer[i]) {
                             if (container.length > 0) {
-                                const analyze = config.container_host_constraints[i][key].split(',');
+                                const analyze = config.failover_constraints[i][key].split(',');
                                 if (container.indexOf(analyze[0]) > -1) {
-                                    config.container_host_constraints.splice(i, i + 1);
+                                    config.loadbalancer.splice(i, i + 1);
                                 }
                             }
                         }
                     }
                 } else {
-                    config.container_host_constraints.push({
-                        container: failover_constraints
+                    config.loadbalancer.push({
+                        container: failover_constraints + ',' + container_port + ',' + service_port
                     });
                 }
             }
-        }
+            configure_loadbalancer();
+        } else {
 
-        if (heartbeat_args) {
-            let proceed = 0;
-            Object.keys(config.hb).forEach((get_node, i) => {
-                Object.keys(config.hb[i]).forEach(key => {
-                    if (key.indexOf(container) > -1) {
-                        if (heartbeat_args.indexOf('delete') > -1) {
-                            delete config.hb[i][key];
-                            proceed = 1;
-                        } else {
-                            config.hb[i][key] = heartbeat_args;
-                            proceed = 1;
-                        }
-                    }
-                });
-            });
-
-            if (proceed === 0) {
-                let node = '';
+            if (container_args) {
                 Object.keys(config.layout).forEach((get_node, i) => {
                     Object.keys(config.layout[i]).forEach(key => {
                         if (key.indexOf(container) > -1) {
-                            node = config.layout[i].node;
+                            config.layout[i][key] = container_args;
+                        }
+                    });
+                });
+            }
+
+            if (failover_constraints) {
+                let proceed = 0;
+
+                Object.keys(config.container_host_constraints).forEach((get_node, i) => {
+                    Object.keys(config.container_host_constraints[i]).forEach(key => {
+                        const get_container_name = failover_constraints.split(',');
+                        const parse_container = get_container_name[0];
+
+                        if (config.container_host_constraints[i][key].indexOf(parse_container) > -1) {
+                            if (failover_constraints.indexOf('none') > -1) {
+                                proceed = 0;
+                            } else {
+                                proceed = 1;
+                                config.container_host_constraints[i][key] = failover_constraints;
+                            }
                         }
                     });
                 });
 
-                for (let i = 0; i < config.hb.length; i++) {
-                    if (config.hb[i].node.indexOf(node) > -1 && heartbeat_args.indexOf('delete') === -1) {
-                        config.hb[i][container] = heartbeat_args;
+                if (proceed === 0) {
+                    if (failover_constraints.indexOf('none') > -1) {
+                        for (let i = 0; i < config.container_host_constraints.length; i++) {
+                            for (const key in config.container_host_constraints[i]) {
+                                if (container.length > 0) {
+                                    const analyze = config.container_host_constraints[i][key].split(',');
+                                    if (container.indexOf(analyze[0]) > -1) {
+                                        config.container_host_constraints.splice(i, i + 1);
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        config.container_host_constraints.push({
+                            container: failover_constraints
+                        });
+                    }
+                }
+            }
+
+            if (heartbeat_args) {
+                let proceed = 0;
+                Object.keys(config.hb).forEach((get_node, i) => {
+                    Object.keys(config.hb[i]).forEach(key => {
+                        if (key.indexOf(container) > -1) {
+                            if (heartbeat_args.indexOf('delete') > -1) {
+                                delete config.hb[i][key];
+                                proceed = 1;
+                            } else {
+                                config.hb[i][key] = heartbeat_args;
+                                proceed = 1;
+                            }
+                        }
+                    });
+                });
+
+                if (proceed === 0) {
+                    let node = '';
+                    Object.keys(config.layout).forEach((get_node, i) => {
+                        Object.keys(config.layout[i]).forEach(key => {
+                            if (key.indexOf(container) > -1) {
+                                node = config.layout[i].node;
+                            }
+                        });
+                    });
+
+                    for (let i = 0; i < config.hb.length; i++) {
+                        if (config.hb[i].node.indexOf(node) > -1 && heartbeat_args.indexOf('delete') === -1) {
+                            config.hb[i][container] = heartbeat_args;
+                        }
                     }
                 }
             }
