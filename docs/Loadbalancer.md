@@ -8,7 +8,7 @@ In the docker folder in the root of the picluster folder, there is folder called
 
 ## Prerequisites
 
-1. Build the picluste_lb container from the docker folder in the root of the PiCluster directory
+1. Build the picluster_lb container from the docker folder in the root of the PiCluster directory
 
 ```
 cd /root/picluster/docker/picluster_lb
@@ -23,7 +23,7 @@ docker build -t picluster_lb .
 
   ### Add and Run the PiCluster Load Balancer container 
 
-3. In the PiCluster Web Console, click on ```Containers``` -> ```Manage```  followed by Add.
+3. In the PiCluster Web Console, click on ```Containers``` -> ```Manage```  followed by ```Add```.
 
 4. Configure it as shown below:
 
@@ -43,3 +43,7 @@ Click ```Submit``` and the container should be up and running shortly
 6. Choose the nodes for the container loadbalancer.
 
 7. Enter the ports for ```Service Port``` and ```Container Port```
+
+8. Click ```Submit```
+
+9. Test it out.
