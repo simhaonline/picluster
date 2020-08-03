@@ -996,7 +996,7 @@ function configure_loadbalancer() {
                 if (err) {
                     console.log(err);
                 } else {
-                    command = 'docker cp ' + container_config + ' picluster_lb:/etc/nginx/conf.d/;docker container restart picluster_lb ';
+                    command = 'docker container stop picluster_lb;docker cp ' + container_config + ' picluster_lb:/etc/nginx/conf.d/;docker container restart picluster_lb ';
                     exec(command, (error, stdout, stderr) => {
                         if (error) {
                             console.log(stderr);
