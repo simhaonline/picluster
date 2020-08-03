@@ -1075,7 +1075,7 @@ app.get('/update-container', (req, res) => {
                     }
                 } else {
                     config.loadbalancer.push({
-                        container: lb_hosts
+                        container: lb_hosts + ',' + container_port + ',' + service_port;
                     });
                 }
             }
