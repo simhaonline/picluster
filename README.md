@@ -81,7 +81,7 @@ Finally, in your web browser go to <http://127.0.0.1:3003>
 [See Wiki](https://github.com/picluster/picluster/wiki/Installation)
 
 ## Container Load Balancer 
-[See Wiki](https://github.com/picluster/picluster/wiki/CoLoadbalancer)
+[See Wiki](https://github.com/picluster/picluster/wiki/Loadbalancer)
 
 ## Upgrading
 
