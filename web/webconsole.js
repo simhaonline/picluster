@@ -606,6 +606,51 @@ app.post('/changehost', (req, res) => {
     }
 });
 
+app.post('/lb', (req, res) => {
+    const check_token = req.body.token;
+    const {
+        container_args
+    } = req.body;
+    const {
+        container
+    } = req.body;
+    const {
+        heartbeat_args
+    } = req.body;
+    const {
+        container_port
+    } = req.body;
+    const {
+        service_port
+    } = req.body;
+    const {
+        lb_hosts
+    } = req.body;
+
+
+    if ((check_token !== token) || (!check_token)) {
+        res.end('\nError: Invalid Credentials');
+    } else if (container) {
+        superagent
+            .get(`${scheme}${server}:${server_port}/lb`)
+            .query({ token: check_token, lb_hosts: lb_hosts, container_port: container_port, service_port: service_port, container: container })
+            .end((error, response) => {
+                try {
+                    if (!error || response.text) {
+                        display_log(data => {
+                            res.end(response.text);
+                        });
+                    } else {
+                        res.end('\nError connecting with server.');
+                    }
+                } catch (error) {};
+            });
+    } else {
+        res.end('\nError missing some parameters.');
+    }
+});
+
+
 app.post('/update-container', (req, res) => {
     const check_token = req.body.token;
     const {
