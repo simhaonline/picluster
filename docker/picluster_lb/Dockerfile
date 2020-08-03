@@ -10,5 +10,5 @@ RUN rm -rf /etc/nginx/conf.d/*
 #ENV Variables
 ENV TERM xterm
 
-CMD rm -rf /etc/nginx/conf.d/*;nginx
+CMD nginx
 
