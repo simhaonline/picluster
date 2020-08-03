@@ -240,8 +240,8 @@
                                     container_lb_fieldset[z].click();
                                     var container_port = document.getElementById("container_port_args");
                                     var service_port = document.getElementById("service_port_args");
-                                    container_port.value = analyze[2];
-                                    service_port.value = analyze[3];
+                                    container_port.value = analyze[analyze.length - 2];
+                                    service_port.value = analyze[analyze.length - 1];
                                 }
                             });
                         }
