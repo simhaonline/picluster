@@ -282,8 +282,7 @@ function unzipFile(file) {
     }));
 }
 
-/**
- function reloadConfig() {
+function reloadConfig() {
     try {
         config = process.env.PICLUSTER_CONFIG ? JSON.parse(fs.readFileSync(process.env.PICLUSTER_CONFIG, 'utf8')) : JSON.parse(fs.readFileSync('../config.json', 'utf8'));
         token = config.token;
@@ -294,7 +293,6 @@ function unzipFile(file) {
         console.log(error);
     }
 }
-**/
 
 app.post('/receive-file', upload.single('file'), (req, res) => {
     const check_token = req.body.token;
@@ -314,7 +312,7 @@ app.post('/receive-file', upload.single('file'), (req, res) => {
                 config_file = '../config.json';
             }
             newPath = config_file;
-            dat = req.body.data;
+            data = req.body.data;
         } else {
             data = req.body.data.formData.file.data;
             newPath = config.docker + '/' + req.body.name;
