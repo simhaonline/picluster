@@ -1895,6 +1895,9 @@ function reloadConfig() {
             automatic_heartbeat();
         }
     }
+    if (config.elasticsearch) {
+        elasticsearch(config);
+    }
     addLog('\nReloading Config.json\n');
 }
 

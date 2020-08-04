@@ -9,6 +9,7 @@
 * Updated Travis CI testing to Node 14.x
 * Agent - Changed Deprecated exec() API to child_process.exec()
 * Updated Grafana dashboards for ES 7.x
+* If using Elasticsearch, PiCluster config is also stored after each change
 
 ## Removed or Deprecated:
 * /clear-elasticsearch
