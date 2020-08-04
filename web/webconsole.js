@@ -742,11 +742,12 @@ app.post('/addcontainer', (req, res) => {
     }
 });
 
-function sendFile(file, temp_file) {
+function sendFile(original_name, temp_file, data) {
     const formData = {
-        name: 'file',
+        original_name,
+        name: temp_file,
         token,
-        file: fs.createReadStream(file)
+        file: data
     };
 
     superagent
@@ -779,11 +780,8 @@ app.post('/upload', upload.single('file'), (req, res) => {
             if (err) {
                 console.log('\nReadFile Error:' + err);
             }
-            const newPath = path.join('../', req.file.originalname);
-            fs.writeFile(newPath, data, () => {
-                sendFile(newPath, req.file.path);
-                res.end('');
-            });
+            sendFile(req.file.originalname, req.file.path, data);
+            res.end('');
         });
     }
 });

@@ -1,5 +1,9 @@
 # Version 3.0
 
+## To Do
+* Sending config to ES not working
+* Container move not working
+
 ## New Features:
 * Container Loadbalancer
 
@@ -15,6 +19,7 @@
 * /clear-elasticsearch
 
 ## Bug Fixes:
+* Copying config and container images across nodes now works
 * Repopulates nodes in config.json for Heartbeat if empty
 * Fixed output message when removing host from cluster
 * Fixed Prune Window size

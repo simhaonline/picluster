@@ -283,53 +283,59 @@ function unzipFile(file) {
 }
 
 function reloadConfig() {
-    config = process.env.PICLUSTER_CONFIG ? JSON.parse(fs.readFileSync(process.env.PICLUSTER_CONFIG, 'utf8')) : JSON.parse(fs.readFileSync('../config.json', 'utf8'));
-    token = config.token;
-    server = config.web_connect;
-    server_port = config.server_port;
+    try {
+        config = process.env.PICLUSTER_CONFIG || JSON.parse(fs.readFileSync('../config.json', 'utf8'));
+        token = config.token;
+        server = config.web_connect;
+        server_port = config.server_port;
+    } catch (error) {
+        console.log(process.env.PICLUSTER_CONFIG);
+        console.log(error);
+    }
 }
 
 app.post('/receive-file', upload.single('file'), (req, res) => {
     const check_token = req.body.token;
     const get_config_file = req.body.config_file;
+    let data = '';
 
     if ((check_token !== token) || (!check_token)) {
         res.end('\nError: Invalid Credentials');
     } else {
-        fs.readFile(req.body.file.path, (err, data) => {
-            if (err) {
-                console.log('\nError reading file: ' + err);
-            }
-            let newPath = req.body.file.path;
-            let config_file = '';
+        let newPath = req.body.name;
+        let config_file = '';
 
-            if (get_config_file) {
-                if (process.env.PICLUSTER_CONFIG) {
-                    config_file = process.env.PICLUSTER_CONFIG;
-                } else {
-                    config_file = '../config.json';
-                }
-                newPath = config_file;
+        if (get_config_file) {
+            if (process.env.PICLUSTER_CONFIG) {
+                config_file = process.env.PICLUSTER_CONFIG;
+            } else {
+                config_file = '../config.json';
             }
-            setTimeout(() => {
-                fs.writeFile(newPath, data, err => {
-                    if (!err) {
-                        if (get_config_file) {
-                            reloadConfig();
-                        }
-
-                        if (req.body.file.path.indexOf('.zip') > -1) {
-                            unzipFile(newPath);
-                            fs.unlink(req.body.file.path, error => {
-                                if (error) {
-                                    console.log(error);
-                                }
-                            });
-                        }
+            newPath = config_file;
+            dat = req.body.data;
+        } else {
+            data = req.body.data.formData.file.data;
+            newPath = config.docker + '/' + req.body.name;
+        }
+        setTimeout(() => {
+            var buff = new Buffer.from(data, 'binary');
+            fs.writeFile(newPath, buff, err => {
+                if (!err) {
+                    if (get_config_file) {
+                        reloadConfig();
                     }
-                });
-            }, 5000);
-        });
+
+                    if (newPath.indexOf('.zip') > -1) {
+                        unzipFile(newPath);
+                        fs.unlink(newPath, error => {
+                            if (error) {
+                                console.log(error);
+                            }
+                        });
+                    }
+                }
+            });
+        }, 5000);
         res.end('Done');
     }
 });

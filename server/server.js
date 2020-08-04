@@ -1367,17 +1367,17 @@ app.post('/listnodes', (req, res) => {
     }
 });
 
-function copyToAgents(file, config_file, temp_file) {
+function copyToAgents(data, file, config_file, temp_file) {
     Object.keys(config.layout).forEach((get_node, i) => {
         const {
             node
         } = config.layout[i];
 
         const formData = {
-            name: 'file',
+            name: file,
             token,
-            config_file,
-            file: fs.createReadStream(file)
+            config_file: config_file,
+            data: data
         };
 
         superagent
@@ -1409,18 +1409,7 @@ app.post('/receive-file', upload.single('file'), (req, res) => {
     if ((check_token !== token) || (!check_token)) {
         res.end('\nError: Invalid Credentials');
     } else {
-        fs.readFile(req.body.formData.file.path, (err, data) => {
-            if (data) {
-                const newPath = '../' + req.body.formData.file.path;
-                fs.writeFile(newPath, data, err => {
-                    if (err) {
-                        console.log(err);
-                    } else {
-                        copyToAgents(newPath, '', req.body.formData.file.path);
-                    }
-                });
-            }
-        });
+        copyToAgents(req.body, req.body.formData.original_name, '', req.body.formData.file.path);
         res.end('');
     }
 });
@@ -1982,7 +1971,7 @@ app.post('/updateconfig', (req, res) => {
                     if (err) {
                         console.log('\nError while writing config.' + err);
                     } else {
-                        copyToAgents(config_file, 'config', '');
+                        copyToAgents(payload, config_file, 'config', '');
                         reloadConfig();
                         res.end('Updated Configuration.');
                     }
