@@ -321,10 +321,6 @@ app.post('/receive-file', upload.single('file'), (req, res) => {
             var buff = new Buffer.from(data, 'binary');
             fs.writeFile(newPath, buff, err => {
                 if (!err) {
-                    //if (get_config_file) {
-                    //  reloadConfig();
-                    // }
-
                     if (newPath.indexOf('.zip') > -1) {
                         unzipFile(newPath);
                         fs.unlink(newPath, error => {
