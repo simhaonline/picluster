@@ -1845,9 +1845,9 @@ app.get('/log', (req, res) => {
     if ((check_token !== token) || (!check_token)) {
         res.end('\nError: Invalid Credentials');
     } else {
-        // if (config.elasticsearch) {
-        //    elasticsearch(JSON.stringify(log));
-        // }
+        if (config.elasticsearch) {
+            elasticsearch(JSON.stringify(log));
+        }
         res.send(log);
     }
 });
