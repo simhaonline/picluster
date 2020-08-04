@@ -1853,7 +1853,7 @@ app.get('/log', (req, res) => {
         res.end('\nError: Invalid Credentials');
     } else {
         if (config.elasticsearch) {
-            elasticsearch(log);
+            elasticsearch(JSON.stringify(log));
         }
         res.send(log);
     }
