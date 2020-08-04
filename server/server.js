@@ -1960,7 +1960,6 @@ app.post('/updateconfig', (req, res) => {
 
     try {
         const verify_payload = JSON.parse(req.body.payload);
-
         if ((check_token !== token) || (!check_token)) {
             res.end('\nError: Invalid Credentials');
         } else {

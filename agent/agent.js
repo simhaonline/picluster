@@ -282,9 +282,10 @@ function unzipFile(file) {
     }));
 }
 
-function reloadConfig() {
+/**
+ function reloadConfig() {
     try {
-        config = process.env.PICLUSTER_CONFIG || JSON.parse(fs.readFileSync('../config.json', 'utf8'));
+        config = process.env.PICLUSTER_CONFIG ? JSON.parse(fs.readFileSync(process.env.PICLUSTER_CONFIG, 'utf8')) : JSON.parse(fs.readFileSync('../config.json', 'utf8'));
         token = config.token;
         server = config.web_connect;
         server_port = config.server_port;
@@ -293,6 +294,7 @@ function reloadConfig() {
         console.log(error);
     }
 }
+**/
 
 app.post('/receive-file', upload.single('file'), (req, res) => {
     const check_token = req.body.token;
@@ -321,9 +323,9 @@ app.post('/receive-file', upload.single('file'), (req, res) => {
             var buff = new Buffer.from(data, 'binary');
             fs.writeFile(newPath, buff, err => {
                 if (!err) {
-                    if (get_config_file) {
-                        reloadConfig();
-                    }
+                    //if (get_config_file) {
+                    //  reloadConfig();
+                    // }
 
                     if (newPath.indexOf('.zip') > -1) {
                         unzipFile(newPath);
