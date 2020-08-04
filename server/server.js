@@ -1380,22 +1380,24 @@ function copyToAgents(data, file, config_file, temp_file) {
             data: data
         };
 
-        superagent
-            .post(`${scheme}${node}:${agent_port}/receive-file`)
-            .send(formData)
-            .set('accept', 'json')
-            .end((error, response) => {
-                try {
-                    if (!config_file) {
-                        addLog('\nCopied ' + file + ' to ' + node);
-                        console.log('\nCopied ' + file + ' to ' + node);
+        setTimeout(() => {
+            superagent
+                .post(`${scheme}${node}:${agent_port}/receive-file`)
+                .send(formData)
+                .set('accept', 'json')
+                .end((error, response) => {
+                    try {
+                        if (!config_file) {
+                            addLog('\nCopied ' + file + ' to ' + node);
+                            console.log('\nCopied ' + file + ' to ' + node);
+                        }
+                    } catch (error) {
+                        console.log('\nResponse= ' + response);
+                        console.log('\n' + formData);
+                        console.log('\nError sending file to agent: ' + error);
                     }
-                } catch (error) {
-                    console.log('\nResponse= ' + response);
-                    console.log('\n' + formData);
-                    console.log('\nError sending file to agent: ' + error);
-                }
-            });
+                });
+        }, 3000);
     });
     if (temp_file) {
         fs.unlink(temp_file, error => {
