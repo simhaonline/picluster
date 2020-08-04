@@ -465,6 +465,9 @@ app.get('/nodes', (req, res) => {
 
 function addLog(data) {
     log += data;
+    if (config.elasticsearch) {
+        elasticsearch(JSON.stringify(log));
+    }
 }
 
 app.get('/', (req, res) => {
@@ -659,9 +662,7 @@ function migrate(container, original_host, new_host, original_container_data, uu
         .send({ token: token, command: 'docker container rm -f ' + container })
         .set('accept', 'json')
         .end((error, response) => {
-            if (error) {
-                addLog('An error has occurred.');
-            } else {
+            try {
                 let command = '';
                 if (uuid) {
                     const image_name = container.split('-' + uuid)[0];
@@ -675,16 +676,23 @@ function migrate(container, original_host, new_host, original_container_data, uu
                     .send({ token: token, command: command })
                     .set('accept', 'json')
                     .end((second_error, second_response) => {
-                        if (second_error) {
-                            addLog('An error has occurred.');
-                        }
-                        if (config.automatic_heartbeat) {
-                            if (existing_automatic_heartbeat_value.indexOf('enabled') > -1) {
-                                config.automatic_heartbeat = existing_automatic_heartbeat_value;
+                        try {
+                            if (config.automatic_heartbeat) {
+                                if (existing_automatic_heartbeat_value.indexOf('enabled') > -1) {
+                                    config.automatic_heartbeat = existing_automatic_heartbeat_value;
+                                }
                             }
+                        } catch (second_error) {
+                            addLog('An error has occurred');
+                            console.log('\nError with migration: ' + second_error);
                         }
+
                     });
+            } catch (error) {
+                addLog('An error has occurred with migration:');
+                console.log(error);
             }
+
         });
 }
 
@@ -1884,9 +1892,6 @@ function reloadConfig() {
             console.log('\nEnabing Heartbeat.');
             automatic_heartbeat();
         }
-    }
-    if (config.elasticsearch) {
-        elasticsearch(config);
     }
     addLog('\nReloading Config.json\n');
 }
