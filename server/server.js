@@ -1385,13 +1385,15 @@ function copyToAgents(data, file, config_file, temp_file) {
             .send(formData)
             .set('accept', 'json')
             .end((error, response) => {
-                if (error) {
-                    console.log('\nError sending file to agent: ' + error);
-                } else {
+                try {
                     if (!config_file) {
                         addLog('\nCopied ' + file + ' to ' + node);
                         console.log('\nCopied ' + file + ' to ' + node);
                     }
+                } catch (error) {
+                    console.log('\nResponse= ' + response);
+                    console.log('\n' + formData);
+                    console.log('\nError sending file to agent: ' + error);
                 }
             });
     });
