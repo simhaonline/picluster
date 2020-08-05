@@ -1,9 +1,5 @@
 # Version 3.0
 
-## To Do
-* Sending config to ES not working
-* Container move not working
-
 ## New Features:
 * Container Loadbalancer
 

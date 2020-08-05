@@ -982,43 +982,41 @@ app.get('/addcontainer', (req, res) => {
 });
 
 function configure_loadbalancer() {
-    let final_nginx_config = "";
+    let nginx_configuration = 'stream { \n ';
 
     Object.keys(config.loadbalancer).forEach((get_node, i) => {
         Object.keys(config.loadbalancer[i]).forEach(key => {
-            final_nginx_config = "";
             const parse_data = config.loadbalancer[i][key].split(',');
             const container_name = parse_data[0];
             const container_port = parse_data[parse_data.length - 2];
             const service_port = parse_data[parse_data.length - 1];
             const lb_hosts = parse_data.toString().split(',');
-
-            final_nginx_config = 'stream { \n upstream ' + container_name + ' {';
+            nginx_configuration += '\n\n upstream ' + container_name + ' {';
             for (let i = 1; i < lb_hosts.length - 2; i++) {
-                final_nginx_config += '\nserver ' + lb_hosts[i] + ':' + container_port + ';';
+                nginx_configuration += '\nserver ' + lb_hosts[i] + ':' + container_port + ';';
             }
-            final_nginx_config += '\n } \nserver { \n listen ' + ' ' + service_port + '; \n proxy_pass ' + container_name + ';\n } \n }';
-
-            const container_config = container_name + '.conf';
-            fs.writeFile(container_config, final_nginx_config, err => {
-                if (err) {
-                    console.log(err);
+            nginx_configuration += '\n } \n\nserver { \n listen ' + ' ' + service_port + '; \n proxy_pass ' + container_name + ';\n }';
+        });
+    });
+    nginx_configuration += '\n }';
+    console.log(nginx_configuration);
+    fs.writeFile('picluster.conf', nginx_configuration, err => {
+        if (err) {
+            console.log(err);
+        } else {
+            command = 'docker container stop picluster_lb;docker cp picluster.conf picluster_lb:/etc/nginx/conf.d/;docker container restart picluster_lb ';
+            exec(command, (error, stdout, stderr) => {
+                if (error) {
+                    console.log(stderr);
                 } else {
-                    command = 'docker container stop picluster_lb;docker cp ' + container_config + ' picluster_lb:/etc/nginx/conf.d/;docker container restart picluster_lb ';
-                    exec(command, (error, stdout, stderr) => {
-                        if (error) {
-                            console.log(stderr);
-                        } else {
-                            console.log(stdout);
-                        }
-                    }, err => {
-                        if (err) {
-                            console.error('error:', err);
-                        }
-                    });
+                    console.log(stdout);
+                }
+            }, err => {
+                if (err) {
+                    console.error('error:', err);
                 }
             });
-        });
+        }
     });
 }
 
