@@ -185,9 +185,17 @@ fieldset {
     width: 100%;
 }
 
+.container_status_div {
+    margin: 20px;
+    width: 90px;
+    display: inline-block;
+    vertical-align: top;
+    text-align: center;
+}
+
 .node_status_div {
-    margin: 10px;
-    width: 105px;
+    margin: 20px;
+    width: 75px;
     display: inline-block;
     vertical-align: top;
     text-align: center;
@@ -230,6 +238,7 @@ fieldset {
 }
 
 .container_card_list {
+    margin: 40px;
     display: inline-block;
     vertical-align: top;
 }
