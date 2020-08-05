@@ -31,7 +31,8 @@
             if (parent.manage_container) {
                 option += '<option value="' + parent.manage_container + '">' + parent.manage_container + '</option>';
                 $('#container_list').append(option);
-                parent.manage_container = '';
+                //  document.getElementById("radio_container_modify").click();
+                // parent.manage_container = '';
             } else {
                 $.get("/nodes?token=" + parent.token, function(data) {
                     for (var i in data.container_list) {
@@ -310,6 +311,15 @@
             $("#service_port_args").hide();
             $('#loadbalancer_hosts').hide();
             $('#container_lb_fieldset').hide();
+        });
+    </script>
+    <script>
+        $(function() {
+            var option = '';
+            if (parent.manage_container) {
+                document.getElementById("radio_container_modify").click();
+                parent.manage_container = '';
+            }
         });
     </script>
 </head>
