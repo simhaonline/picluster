@@ -1,0 +1,54 @@
+version: '3'
+services:
+
+  server:
+    image: "node:alpine"
+    restart: "always"
+    volumes:
+      - .:/picluster
+      - ./docker-compose-multinode.config.json:/picluster/config.json
+      - ./picluster-pm2.config-example.json:/picluster/picluster-pm2.config.json
+    ports:
+      - "3003:3003"
+    networks:
+      - picluster
+    working_dir: /picluster
+    command: ["sh", "-c", "set -e; printf 'http://mirror.clarkson.edu/alpine/edge/main\nhttp://mirror.clarkson.edu/alpine/edge/community' > /etc/apk/repositories; apk update; apk add --no-cache git python3 make g++ docker procps supervisor; printf \"[supervisord]\n\n[program:dockerd]\ncommand=dockerd\" > /etc/supervisor.conf; npm install -g pm2; supervisord -c /etc/supervisor.conf; npm install --production --unsafe-perm; pm2-docker start /picluster/picluster-pm2.config.json"]
+    environment:
+      COMPOSE_HTTP_TIMEOUT: 600
+    privileged: true
+
+  node2:
+    image: "node:alpine"
+    restart: "always"
+    volumes:
+      - .:/picluster
+      - ./docker-compose-multinode.config.json:/picluster/config.json
+      - ./picluster-pm2.config-example.json:/picluster/picluster-pm2.config.json
+    networks:
+      - picluster
+    working_dir: /picluster
+    command: ["sh", "-c", "set -e; printf 'http://mirror.clarkson.edu/alpine/edge/main\nhttp://mirror.clarkson.edu/alpine/edge/community' > /etc/apk/repositories; apk update; apk add --no-cache git python3 make g++ docker procps supervisor; printf \"[supervisord]\n\n[program:dockerd]\ncommand=dockerd\" > /etc/supervisor.conf; npm install -g pm2; supervisord -c /etc/supervisor.conf; npm install --production --unsafe-perm; pm2-docker start /picluster/picluster-pm2.config.json"]
+    environment:
+      COMPOSE_HTTP_TIMEOUT: 600
+    privileged: true
+     
+  node3:
+    image: "node:alpine"
+    restart: "always"
+    volumes:
+      - .:/picluster
+      - ./docker-compose-multinode.config.json:/picluster/config.json
+      - ./picluster-pm2.config-example.json:/picluster/picluster-pm2.config.json
+    networks:
+      - picluster
+    working_dir: /picluster
+    command: ["sh", "-c", "set -e; printf 'http://mirror.clarkson.edu/alpine/edge/main\nhttp://mirror.clarkson.edu/alpine/edge/community' > /etc/apk/repositories; apk update; apk add --no-cache git python3 make g++ docker procps supervisor; printf \"[supervisord]\n\n[program:dockerd]\ncommand=dockerd\" > /etc/supervisor.conf; npm install -g pm2; supervisord -c /etc/supervisor.conf; npm install --production --unsafe-perm; pm2-docker start /picluster/picluster-pm2.config.json"]
+    environment:
+      COMPOSE_HTTP_TIMEOUT: 600
+    privileged: true
+
+
+networks:
+    picluster:
+          
