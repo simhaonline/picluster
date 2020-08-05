@@ -238,6 +238,7 @@ fieldset {
 }
 
 .container_card_list {
+    font-weight: bold;
     margin: 40px;
     display: inline-block;
     vertical-align: top;
