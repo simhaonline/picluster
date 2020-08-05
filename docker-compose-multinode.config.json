@@ -1,0 +1,26 @@
+{
+    "token": "1234567890ABCDEFGHJKLMNOP",
+    "docker": "../docker",
+    "doc_dir": "../docs",
+    "server_port": "3000",
+    "theme": "default",
+    "agent_port": "3001",
+    "ssl": false,
+    "ssl_self_signed": false,
+    "ssl_cert": "",
+    "ssl_key": "",
+    "layout": [
+
+    ],
+    "hb": [
+
+    ],
+    "container_host_constraints": [],
+    "automatic_heartbeat": "enabled",
+    "heartbeat_interval": "300000",
+    "syslog": "dmesg",
+    "web_username": "admin",
+    "web_password": "admin",
+    "web_connect": "server",
+    "web_port": "3003"
+}
