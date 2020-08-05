@@ -14,8 +14,8 @@
         "lodash": "latest",
         "moment": "",
         "multer": "latest",
-        "node-gyp": "",
         "superagent": "^5.3.1",
-        "sys": ""
+        "sys": "",
+        "uuid": "^8.3.0"
     }
 }

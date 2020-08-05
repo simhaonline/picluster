@@ -18,7 +18,6 @@
         "lodash": "latest",
         "mem-stat": "latest",
         "multer": "latest",
-        "node-gyp": "latest",
         "os": "latest",
         "picluster-getos": "git+https://github.com/picluster/getos.git",
         "superagent": "^5.3.1",
