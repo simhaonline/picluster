@@ -185,9 +185,17 @@ fieldset {
     width: 100%;
 }
 
+.container_status_div {
+    margin: 20px;
+    width: 75px;
+    display: inline-block;
+    vertical-align: top;
+    text-align: center;
+}
+
 .node_status_div {
-    margin: 10px;
-    width: 105px;
+    margin: 20px;
+    width: 75px;
     display: inline-block;
     vertical-align: top;
     text-align: center;
@@ -205,7 +213,7 @@ fieldset {
 }
 
 .div_logo_text {
-    font-size: medium;
+    font-size: 18px;
     font-weight: bold;
     white-space: pre-wrap;
     color: black;
@@ -230,6 +238,8 @@ fieldset {
 }
 
 .container_card_list {
+    font-weight: bold;
+    margin: 40px;
     display: inline-block;
     vertical-align: top;
 }

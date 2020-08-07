@@ -18,7 +18,7 @@ before_install:
 - sudo curl -L https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-`uname -s`-`uname -m` > /tmp/docker-compose
 - sudo mv /tmp/docker-compose /usr/local/bin/docker-compose
 - sudo chmod +x /usr/local/bin/docker-compose
-- curl -sL https://deb.nodesource.com/setup_8.x | sudo -E bash -
+- curl -sL https://deb.nodesource.com/setup_14.x | sudo -E bash -
 - sudo apt-get install -y nodejs
 - cd /tmp;curl -O http://mirrors.kernel.org/ubuntu/pool/universe/s/shellcheck/shellcheck_0.3.3-1~ubuntu14.04.1_amd64.deb && sudo dpkg -i shellcheck_0.3.3-1~ubuntu14.04.1_amd64.deb;cd $OLDPWD;
 

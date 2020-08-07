@@ -4,19 +4,16 @@ const fs = require('fs');
 const os = require('os');
 const unzip = require('unzip-stream');
 const express = require('express');
-const request = require('request');
 const diskspace = require('diskspace');
 const bodyParser = require('body-parser');
 const multer = require('multer');
-const getos = require('picluster-getos');
-const async = require('async');
-const {
-    exec
-} = require('child-process-promise');
+const getos = require('getos');
 const sysinfo = require('systeminformation');
-
+const { exec } = require('child_process');
+const superagent = require('superagent');
 let config = process.env.PICLUSTER_CONFIG ? JSON.parse(fs.readFileSync(process.env.PICLUSTER_CONFIG, 'utf8')) : JSON.parse(fs.readFileSync('../config.json', 'utf8'));
 const app = express();
+app.use(bodyParser.json());
 
 if (config.ssl_self_signed) {
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
@@ -71,6 +68,7 @@ sysinfo.networkInterfaces(data => {
 });
 
 function monitoring() {
+
     sysinfo.networkStats(network_device, data => {
         network_tx = Math.round(data[0].tx_sec / 1000);
         network_rx = Math.round(data[0].rx_sec / 1000);
@@ -166,54 +164,56 @@ function monitoring() {
 
 function send_ping() {
     setTimeout(() => {
-        const token_body = JSON.stringify({
-            token
-        });
-
-        const options = {
-            url: `${scheme}${vip_slave}:${agent_port}/pong`,
-            rejectUnauthorized: ssl_self_signed,
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Content-Length': token_body.length
-            },
-            body: token_body
-        };
-
-        request(options, (error, response, body) => {
-            let found_vip = false;
-            if (error) {
-                const cmd = ip_add_command;
-                exec(cmd).then(noop).catch(noop);
-            } else {
-                const interfaces = require('os').networkInterfaces();
-                Object.keys(interfaces).forEach(devName => {
-                    const iface = interfaces[devName];
-                    iface.forEach(alias => {
-                        if (alias.address === vip) {
-                            found_vip = true;
-                        }
-                    });
-                });
-                const json_object = JSON.parse(body);
-
-                if (json_object.vip_detected === 'false' && found_vip === false) {
-                    console.log('\nVIP not detected on either machine. Bringing up the VIP on this host.');
+        superagent
+            .post(`${scheme}${vip_slave}:${agent_port}/pong`)
+            .send({
+                token: token
+            })
+            .set('accept', 'json')
+            .end((err, res) => {
+                let found_vip = false;
+                if (err) {
                     const cmd = ip_add_command;
-                    exec(cmd).catch(error2 => {
-                        console.log(error2);
+                    exec(cmd, (error, stdout, stderr) => {}, err => {
+                        if (err) {
+                            console.error('error:', err);
+                        }
+                        // Console.log('output', output);
                     });
-                }
-                if ((json_object.vip_detected === 'true' && found_vip === true)) {
-                    console.log('\nVIP detected on boths hosts! Stopping the VIP on this host.');
-                    const cmd = ip_delete_command;
-                    exec(cmd).catch(error2 => {
-                        console.log(error2);
+                } else {
+                    const interfaces = require('os').networkInterfaces();
+                    Object.keys(interfaces).forEach(devName => {
+                        const iface = interfaces[devName];
+                        iface.forEach(alias => {
+                            if (alias.address === vip) {
+                                found_vip = true;
+                            }
+                        });
                     });
+                    const json_object = JSON.parse(res.text);
+
+                    if (json_object.vip_detected === 'false' && found_vip === false) {
+                        console.log('\nVIP not detected on either machine. Bringing up the VIP on this host.');
+                        const cmd = ip_add_command;
+                        exec(cmd, (error, stdout, stderr) => {}, err => {
+                            if (err) {
+                                console.error('error:', err);
+                            }
+                            // Console.log('output', output);
+                        });
+                    }
+                    if ((json_object.vip_detected === 'true' && found_vip === true)) {
+                        console.log('\nVIP detected on boths hosts! Stopping the VIP on this host.');
+                        const cmd = ip_delete_command;
+                        exec(cmd, (error, stdout, stderr) => {}, err => {
+                            if (err) {
+                                console.error('error:', err);
+                            }
+                            // Console.log('output', output);
+                        });
+                    }
                 }
-            }
-        });
+            });
         send_ping();
     }, vip_ping_time);
 }
@@ -283,61 +283,62 @@ function unzipFile(file) {
 }
 
 function reloadConfig() {
-    config = process.env.PICLUSTER_CONFIG ? JSON.parse(fs.readFileSync(process.env.PICLUSTER_CONFIG, 'utf8')) : JSON.parse(fs.readFileSync('../config.json', 'utf8'));
-    token = config.token;
-    server = config.web_connect;
-    server_port = config.server_port;
+    try {
+        config = process.env.PICLUSTER_CONFIG ? JSON.parse(fs.readFileSync(process.env.PICLUSTER_CONFIG, 'utf8')) : JSON.parse(fs.readFileSync('../config.json', 'utf8'));
+        token = config.token;
+        server = config.web_connect;
+        server_port = config.server_port;
+    } catch (error) {
+        console.log(process.env.PICLUSTER_CONFIG);
+        console.log(error);
+    }
 }
 
 app.post('/receive-file', upload.single('file'), (req, res) => {
     const check_token = req.body.token;
     const get_config_file = req.body.config_file;
+    let data = '';
 
     if ((check_token !== token) || (!check_token)) {
         res.end('\nError: Invalid Credentials');
     } else {
-        fs.readFile(req.file.path, (err, data) => {
-            if (err) {
-                console.log('\nError reading file: ' + err);
+        let newPath = req.body.name;
+        let config_file = '';
+
+        if (get_config_file) {
+            if (process.env.PICLUSTER_CONFIG) {
+                config_file = process.env.PICLUSTER_CONFIG;
+            } else {
+                config_file = '../config.json';
             }
-            let newPath = '../' + req.file.originalname;
-            let config_file = '';
-
-            if (get_config_file) {
-                if (process.env.PICLUSTER_CONFIG) {
-                    config_file = process.env.PICLUSTER_CONFIG;
-                } else {
-                    config_file = '../config.json';
-                }
-                newPath = config_file;
-            }
-            setTimeout(() => {
-                fs.writeFile(newPath, data, err => {
-                    if (!err) {
-                        if (get_config_file) {
-                            reloadConfig();
-                        }
-
-                        if (req.file.originalname.indexOf('.zip') > -1) {
-                            unzipFile(newPath);
-                        }
-
-                        fs.unlink(req.file.path, error => {
+            newPath = config_file;
+            data = req.body.data;
+        } else {
+            data = req.body.data.formData.file.data;
+            newPath = config.docker + '/' + req.body.name;
+        }
+        setTimeout(() => {
+            var buff = new Buffer.from(data, 'binary');
+            fs.writeFile(newPath, buff, err => {
+                if (!err) {
+                    if (newPath.indexOf('.zip') > -1) {
+                        unzipFile(newPath);
+                        fs.unlink(newPath, error => {
                             if (error) {
                                 console.log(error);
                             }
                         });
                     }
-                });
-            }, 5000);
-        });
+                }
+            });
+        }, 5000);
         res.end('Done');
     }
 });
 
 app.post('/run', (req, res) => {
     const output = {
-        output: [],
+        output: "",
         node
     };
 
@@ -349,44 +350,18 @@ app.post('/run', (req, res) => {
         });
     }
 
-    // Backwards compatability...
-    if (!('commands' in req.body) && 'command' in req.body) {
-        req.body.commands = req.body.command;
-    }
-
-    const commands = (typeof req.body.commands === 'string') ? [req.body.commands] : req.body.commands;
-
-    if (!(Array.isArray(commands))) {
-        return res.status(400).json({
-            output: 'Bad Request'
-        });
-    }
-
-    async.eachSeries(commands, (command, cb) => {
-        if (typeof command === 'string') {
-            command = [command];
+    exec(req.body.command, (error, stdout, stderr) => {
+        if (error) {
+            output.output = stderr;
+        } else {
+            output.output = stdout;
         }
-        if (!(Array.isArray(command))) {
-            return;
-        }
-        // Console.log('command', command);
-        exec(command.join(' '), {
-            cwd: __dirname
-        }).then(log => {
-            // Console.log('output', log);
-            output.output.push(`${log.stdout || ''}${log.stderr || ''}`);
-            return cb();
-        }).catch(error => {
-            // Console.log('error', err);
-            output.output.push(`${error.stdout || ''}${error.stderr || ''}`);
-            return cb(error);
-        });
+        res.json(output);
     }, err => {
         if (err) {
             console.error('error:', err);
         }
         // Console.log('output', output);
-        res.json(output);
     });
 });
 
@@ -411,46 +386,35 @@ if (config.ssl && config.ssl_cert && config.ssl_key) {
 function bootstrapNode() {
     setTimeout(() => {
         console.log('Attempting to bootstrap node to server......');
-        const bootstrap_body = JSON.stringify({
-            token,
-            host: node
-        });
-
-        const options = {
-            url: `${scheme}${server}:${server_port}/bootstrap`,
-            rejectUnauthorized: ssl_self_signed,
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Content-Length': bootstrap_body.length
-            },
-            body: bootstrap_body
-        };
 
         try {
-            request(options, (error, response, body) => {
-                if (error) {
-                    console.log('Bootstrap failed due to an error or another bootstrap operation already in progress.\n');
-                    console.log(error);
-                    bootstrapNode();
-                } else {
-                    try {
-                        const status = JSON.parse(body);
-                        if (status.output > 0) {
-                            console.log('Bootstrap successful.');
-                            additional_services();
-                        } else {
-                            console.log('\nAnother bootstrap is in progress. Will try again soon.....');
+            superagent
+                .post(`${scheme}${server}:${server_port}/bootstrap`)
+                .send({ token: token, host: node })
+                .set('accept', 'json')
+                .end((err, res) => {
+                    if (err) {
+                        console.log('Bootstrap failed due to an error or another bootstrap operation already in progress.\n');
+                        console.log(err);
+                        bootstrapNode();
+                    } else {
+                        try {
+                            const status = JSON.parse(res.text);
+                            if (status.output > 0) {
+                                console.log('Bootstrap successful.');
+                                additional_services();
+                            } else {
+                                console.log('\nAnother bootstrap is in progress. Will try again soon.....');
+                                bootstrapNode();
+                            }
+                        } catch (error2) {
+                            console.log('\n' + error2 + '\n' + JSON.stringify(res.text));
                             bootstrapNode();
                         }
-                    } catch (error2) {
-                        console.log('\n' + error2 + '\n' + JSON.stringify(body));
-                        bootstrapNode();
                     }
-                }
-            });
+                });
         } catch (error) {
-            console.log('\nAn error has occurred with bootstrapping. Trying again.......');
+            console.log('\nAn error has occurred with bootstrapping. Trying again.......' + '\n' + error);
             bootstrapNode();
         }
     }, 3000);
@@ -464,14 +428,14 @@ function additional_services() {
     if (config.autostart_containers) {
         console.log('Starting all the containers.....');
 
-        const options = {
-            url: `${scheme}${server}:${server_port}/start?token=${token}&container=*`,
-            rejectUnauthorized: ssl_self_signed
-        };
-
-        request.get(options).on('error', e => {
-            console.error(e);
-        });
+        superagent
+            .get(`${scheme}${server}:${server_port}/start`)
+            .query({ token: token, container: '*' })
+            .end((err, res) => {
+                if (err) {
+                    console.log(error);
+                }
+            });
     }
 
     if (config.vip_ip && config.vip) {
@@ -496,7 +460,14 @@ function additional_services() {
                         ip_add_command = 'ip addr add ' + config.vip_ip + '/32 dev ' + vip_eth_device;
                         ip_delete_command = 'ip addr del ' + config.vip_ip + '/32 dev ' + vip_eth_device;
                         vip_ping_time = config.vip[i].vip_ping_time;
-                        exec(ip_delete_command).then(send_ping).catch(send_ping);
+                        exec(ip_delete_command, (error, stdout, stderr) => {
+                            send_ping();
+                        }, err => {
+                            if (err) {
+                                console.error('error:', err);
+                            }
+                            // Console.log('output', output);
+                        });
                     });
                 });
             });
