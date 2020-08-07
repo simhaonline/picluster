@@ -13,6 +13,7 @@
 ## Features
 
 - Move containers to different hosts in the cluster
+- Container Load Balancer
 - Run commands in parallel across Nodes
 - Heartbeat for services
 - Easily build and orchestrate Docker images across nodes
@@ -50,8 +51,6 @@ apt-get install openssl git node docker pq curl
 pacman -S openssl git node docker pq curl
 ```
 
-If you are using Docker 1.12.x and earlier, please use [PiCluster v1.0](https://github.com/picluster/picluster/tree/1.0)
-
 ## Cloning this Repository
 
 ```
@@ -80,6 +79,9 @@ Finally, in your web browser go to <http://127.0.0.1:3003>
 
 ## Installation
 [See Wiki](https://github.com/picluster/picluster/wiki/Installation)
+
+## Container Load Balancer 
+[See Wiki](https://github.com/picluster/picluster/wiki/Loadbalancer)
 
 ## Upgrading
 
